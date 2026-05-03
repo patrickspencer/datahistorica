@@ -1,0 +1,65 @@
+# Strategy Tracker Configuration
+
+# Tiingo API Configuration
+tiingo:
+  api_key: YOUR_API_KEY_HERE
+  base_url: https://api.tiingo.com
+
+# Database Configuration
+database:
+  path: data/strategies.db
+
+# Strategy Configurations
+strategies:
+  gtaa6:
+    name: "GTAA AGG 6"
+    top_n: 6
+    rebalance_day: last  # Last day of month
+    universe:
+      - SPY
+      - IWM
+      - VBK
+      - VBR
+      - VTV
+      - VEA
+      - VWO
+      - VNQ
+      - QQQ
+      - GSG
+      - IAU
+      - VCIT
+      - VGIT
+      - IGOV
+    cash_ticker: BIL
+
+  gtaa3:
+    name: "GTAA AGG 3"
+    top_n: 3
+    rebalance_day: last  # Last day of month
+    universe:
+      - SPY
+      - IWM
+      - VBK
+      - VBR
+      - VTV
+      - VEA
+      - VWO
+      - VNQ
+      - QQQ
+      - GSG
+      - IAU
+      - VCIT
+      - VGIT
+      - IGOV
+    cash_ticker: BIL
+
+  dual_momentum:
+    name: "Dual Momentum ROC12"
+    us_ticker: VOO
+    intl_ticker: VEU
+    cash_ticker: BIL
+
+# Server Configuration
+server:
+  port: 8080
+  host: 0.0.0.0

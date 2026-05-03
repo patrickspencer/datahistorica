@@ -1,0 +1,306 @@
+/* Strategy Tracker - Simple Responsive CSS */
+
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #34495e;
+    --accent-color: #3498db;
+    --success-color: #27ae60;
+    --danger-color: #e74c3c;
+    --cash-color: #95a5a6;
+    --bg-color: #ecf0f1;
+    --card-bg: #ffffff;
+    --text-color: #2c3e50;
+    --border-color: #bdc3c7;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+    padding: 1rem;
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Header */
+header {
+    background: var(--primary-color);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+header h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+header p {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Navigation */
+nav {
+    background: var(--secondary-color);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+nav a:hover {
+    background: var(--accent-color);
+}
+
+/* Grid Layout */
+.strategy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+/* Cards */
+.card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card h2 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: 0.5rem;
+}
+
+.card h3 {
+    color: var(--secondary-color);
+    margin: 1rem 0 0.5rem;
+    font-size: 1.1rem;
+}
+
+/* Meta info */
+.meta {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    margin-bottom: 1rem;
+}
+
+.meta strong {
+    color: var(--text-color);
+}
+
+/* Holdings table */
+.holdings {
+    margin-top: 1rem;
+}
+
+.holding {
+    display: grid;
+    grid-template-columns: 80px 1fr 80px;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    align-items: center;
+}
+
+.holding:last-child {
+    border-bottom: none;
+}
+
+.holding.cash {
+    background-color: #f8f9fa;
+}
+
+.symbol {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+.symbol.cash {
+    color: var(--cash-color);
+}
+
+.details {
+    font-size: 0.9rem;
+}
+
+.details .name {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.details .info {
+    color: #7f8c8d;
+    font-size: 0.85rem;
+}
+
+.allocation {
+    text-align: right;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+.allocation.cash {
+    color: var(--cash-color);
+}
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
+.badge.above-ma {
+    background: var(--success-color);
+    color: white;
+}
+
+.badge.below-ma {
+    background: var(--danger-color);
+    color: white;
+}
+
+.badge.defensive {
+    background: var(--cash-color);
+    color: white;
+}
+
+/* Summary stats */
+.summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    margin-top: 0.25rem;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 3rem;
+    padding: 1.5rem;
+    color: #7f8c8d;
+    font-size: 0.85rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    nav ul {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .strategy-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .holding {
+        grid-template-columns: 60px 1fr;
+    }
+
+    .allocation {
+        grid-column: 2;
+        text-align: left;
+        margin-top: 0.25rem;
+    }
+
+    .summary {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 0.5rem;
+    }
+
+    .card {
+        padding: 1rem;
+    }
+
+    header, nav, .card {
+        border-radius: 4px;
+    }
+
+    .summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Print styles */
+@media print {
+    body {
+        background: white;
+    }
+
+    nav, footer {
+        display: none;
+    }
+
+    .card {
+        box-shadow: none;
+        border: 1px solid var(--border-color);
+        break-inside: avoid;
+    }
+}

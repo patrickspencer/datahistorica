@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Momentum ROC12 - Portfolio Tracker</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Portfolio Tracker</h1>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/gtaa6">GTAA AGG 6</a></li>
+                <li><a href="/gtaa3">GTAA AGG 3</a></li>
+                <li><a href="/dual-momentum">Dual Momentum</a></li>
+            </ul>
+        </nav>
+
+        <main>
+<div class="card">
+    <h2>{{.Name}}</h2>
+
+    <div class="meta">
+        <strong>Strategy:</strong> US vs International equity selection based on 12-month ROC<br>
+        <strong>Allocation:</strong> 100% to single best asset (or cash if both negative)<br>
+        <strong>Signal Date:</strong> {{formatDate .SignalDate}}<br>
+        <strong>Last Updated:</strong> {{formatDate .LastUpdated}}
+    </div>
+
+    <div class="summary">
+        <div class="stat">
+            <div class="stat-value">{{.NumPositions}}</div>
+            <div class="stat-label">Active Positions</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">{{printf "%.0f" (mul .TotalCash 100)}}%</div>
+            <div class="stat-label">Cash Allocation</div>
+        </div>
+    </div>
+
+    <h3>Current Holding</h3>
+    <div class="holdings">
+        {{range .Holdings}}
+        <div class="holding {{if .IsCash}}cash{{end}}">
+            <div class="symbol {{if .IsCash}}cash{{end}}">{{.Symbol}}</div>
+            <div class="details">
+                <div class="name">{{if .Name}}{{.Name}}{{else}}Cash / T-Bills{{end}}</div>
+                {{if not .IsCash}}
+                <div class="info">
+                    Price: ${{printf "%.2f" .Price}}
+                    {{if .MomentumScore}}
+                    | 12-Month ROC: {{printf "%.2f" (mul .MomentumScore 100)}}%
+                    {{end}}
+                </div>
+                <div class="info">
+                    {{if .Reason}}{{.Reason}}{{end}}
+                </div>
+                {{else}}
+                <div class="info">
+                    <span class="badge defensive">🛡️ Defensive Position</span>
+                </div>
+                <div class="info">
+                    {{if .Reason}}{{.Reason}}{{else}}Both US and International have negative 12-month ROC{{end}}
+                </div>
+                {{end}}
+            </div>
+            <div class="allocation {{if .IsCash}}cash{{end}}">{{printf "%.1f" (mul .Allocation 100)}}%</div>
+        </div>
+        {{end}}
+    </div>
+
+    <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+        <h3>About This Strategy</h3>
+        <p><strong>Selection Logic:</strong></p>
+        <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+            <li>If both US and International have positive 12-month ROC: Select the one with higher ROC</li>
+            <li>If only one has positive ROC: Select that one</li>
+            <li>If both have negative ROC: Go to cash (BIL)</li>
+        </ul>
+        <p style="margin-top: 0.5rem;"><strong>Rebalance:</strong> Monthly on last trading day.</p>
+    </div>
+</div>
+        </main>
+
+        <footer>
+            <p>Data updated daily. For informational purposes only. Not financial advice.</p>
+            <p>Portfolio Tracker &copy; 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

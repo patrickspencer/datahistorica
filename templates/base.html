@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{block "title" .}}Portfolio Tracker{{end}}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Portfolio Tracker</h1>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/gtaa6">GTAA AGG 6</a></li>
+                <li><a href="/gtaa3">GTAA AGG 3</a></li>
+                <li><a href="/dual-momentum">Dual Momentum</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            {{block "content" .}}{{end}}
+        </main>
+
+        <footer>
+            <p>Data updated daily. For informational purposes only. Not financial advice.</p>
+            <p>Strategy Tracker &copy; 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

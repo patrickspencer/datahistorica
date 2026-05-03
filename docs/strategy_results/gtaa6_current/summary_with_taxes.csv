@@ -1,0 +1,2 @@
+Strategy,Period,Years,Pre_Tax_CAGR,After_Tax_CAGR,Tax_Drag,Pre_Tax_Final,After_Tax_Final,Total_Taxes,Effective_Tax_Rate,Max_Drawdown,Max_DD_Peak_Date,Max_DD_Trough_Date,Max_DD_Recovery_Date,Max_DD_Duration_Months
+GTAA AGG 6 - Current Universe,2014-05-31 to 2026-05-31,12.0000,0.0879,0.0642,0.0237,27496.9980,21102.0390,4339.9812,0.2480,-0.0927,2018-08-31,2018-12-31,2020-07-31,23
