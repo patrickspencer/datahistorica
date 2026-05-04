@@ -123,14 +123,21 @@
                     <strong>Selection Criteria:</strong> Top assets by average momentum (1M, 3M, 6M, 12M ROC) above 200-day MA
                 </div>
 
-                <div style="margin: 1rem 0; display: flex; align-items: center; gap: 10px; justify-content: flex-end;">
-                    <label for="filterAboveMA" style="cursor: pointer; user-select: none;">
-                        Show only assets above 200-day MA
-                    </label>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="filterAboveMA">
-                        <span class="toggle-slider"></span>
-                    </label>
+                <div style="margin: 1rem 0; display: flex; align-items: center; gap: 20px; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label for="investmentAmount" style="font-weight: 500;">Investment Amount:</label>
+                        <input type="number" id="investmentAmount" placeholder="Enter amount"
+                               style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 150px; font-size: 1rem;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label for="filterAboveMA" style="cursor: pointer; user-select: none;">
+                            Show only assets above 200-day MA
+                        </label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="filterAboveMA">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
                 </div>
 
                 <table class="data-table">
@@ -142,6 +149,7 @@
                             <th class="text-right">Price</th>
                             <th class="text-right">MA200</th>
                             <th class="text-center">Above MA?</th>
+                            <th class="text-right">Amount to Invest</th>
                             <th class="text-right">Avg ROC</th>
                             <th class="text-right">1M ROC</th>
                             <th class="text-right">3M ROC</th>
@@ -151,13 +159,14 @@
                     </thead>
                     <tbody>
                         {{range .GTAAAssets}}
-                        <tr {{if .IsSelected6}}class="selected"{{end}} data-above-ma="{{.AboveMA}}">
+                        <tr {{if .IsSelected6}}class="selected"{{end}} data-above-ma="{{.AboveMA}}" data-is-selected="{{.IsSelected6}}">
                             <td class="text-center">{{.Rank}}</td>
                             <td>{{.Description}}</td>
                             <td><strong>{{.Symbol}}</strong></td>
                             <td class="text-right">${{printf "%.2f" .Price}}</td>
                             <td class="text-right">${{printf "%.2f" .MA200}}</td>
                             <td class="text-center">{{if .AboveMA}}✓{{else}}✗{{end}}</td>
+                            <td class="text-right investment-amount" style="font-weight: 500;">-</td>
                             <td class="text-right {{if gt .AvgROC 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .AvgROC 100.0)}}%</td>
                             <td class="text-right {{if gt .ROC1M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC1M 100.0)}}%</td>
                             <td class="text-right {{if gt .ROC3M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC3M 100.0)}}%</td>
@@ -168,7 +177,7 @@
                     </tbody>
                 </table>
 
-                <p style="margin-top: 1rem; font-size: 0.9em; color: #666;">
+                <p class="gtaa-note" style="margin-top: 1rem; font-size: 0.9em; color: #666;">
                     <strong>Note:</strong> Green-highlighted rows indicate the top 6 assets selected for GTAA AGG 6 strategy (must be above MA200).
                 </p>
             </div>
@@ -303,6 +312,58 @@
                 maximumFractionDigits: 2
             });
         });
+
+        // Investment amount calculator for GTAA 6 table
+        document.getElementById('investmentAmount').addEventListener('input', function() {
+            const totalAmount = parseFloat(this.value) || 0;
+            const slotAmount = totalAmount / 6; // Always 6 slots
+
+            // Get all rows in the GTAA table
+            const rows = document.querySelectorAll('.data-table tbody tr[data-is-selected]');
+            let selectedCount = 0;
+
+            rows.forEach(row => {
+                const isSelected = row.getAttribute('data-is-selected') === 'true';
+                const amountCell = row.querySelector('.investment-amount');
+
+                if (isSelected) {
+                    selectedCount++;
+                    if (totalAmount > 0) {
+                        amountCell.textContent = '$' + slotAmount.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        amountCell.style.color = '#27ae60';
+                    } else {
+                        amountCell.textContent = '-';
+                        amountCell.style.color = '';
+                    }
+                } else {
+                    amountCell.textContent = '-';
+                    amountCell.style.color = '';
+                }
+            });
+
+            // Update or create BIL allocation message
+            updateBILMessage(selectedCount, slotAmount, totalAmount);
+        });
+
+        function updateBILMessage(selectedCount, slotAmount, totalAmount) {
+            const noteElement = document.querySelector('.gtaa-note');
+            const emptySlots = 6 - selectedCount;
+
+            if (emptySlots > 0 && totalAmount > 0) {
+                const bilAmount = emptySlots * slotAmount;
+                noteElement.innerHTML = '<strong>Note:</strong> Green-highlighted rows indicate the top 6 assets selected for GTAA AGG 6 strategy (must be above MA200). ' +
+                    '<br><strong style="color: #e74c3c;">Allocation to BIL (Cash):</strong> ' + emptySlots + ' slot' + (emptySlots > 1 ? 's' : '') + ' = <strong style="color: #e74c3c;">$' +
+                    bilAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</strong>';
+            } else if (totalAmount > 0) {
+                noteElement.innerHTML = '<strong>Note:</strong> Green-highlighted rows indicate the top 6 assets selected for GTAA AGG 6 strategy (must be above MA200). ' +
+                    '<br><strong style="color: #27ae60;">All 6 slots filled - no BIL allocation needed.</strong>';
+            } else {
+                noteElement.innerHTML = '<strong>Note:</strong> Green-highlighted rows indicate the top 6 assets selected for GTAA AGG 6 strategy (must be above MA200).';
+            }
+        }
     </script>
 </body>
 </html>
