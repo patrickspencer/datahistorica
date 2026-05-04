@@ -40,3 +40,9 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Local build artifacts
+tmp/
+
+# Claude local settings
+.claude/settings.local.json
