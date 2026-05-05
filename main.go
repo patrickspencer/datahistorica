@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -43,16 +44,30 @@ func main() {
 
 	// Load templates with custom functions
 	funcMap := template.FuncMap{
-		"mul": func(a, b float64) float64 { return a * b },
-		"add": func(a, b float64) float64 { return a + b },
-		"sub": func(a, b float64) float64 { return a - b },
-		"div": func(a, b float64) float64 { return a / b },
+		"mul":     func(a, b float64) float64 { return a * b },
+		"add":     func(a, b int) int { return a + b },
+		"sub":     func(a, b float64) float64 { return a - b },
+		"div":     func(a, b float64) float64 { return a / b },
+		"divf":    func(a, b float64) float64 { return a / b },
+		"float64": func(a int) float64 { return float64(a) },
 		"formatDate": func(dateStr string) string {
 			// Remove time portion from ISO datetime string
 			if len(dateStr) >= 10 {
 				return dateStr[:10]
 			}
 			return dateStr
+		},
+		"formatMonthYear": func(dateStr string) string {
+			// Parse ISO datetime string and format as "Jan, 2024"
+			t, err := time.Parse("2006-01-02T15:04:05Z", dateStr)
+			if err != nil {
+				// Try without time portion
+				t, err = time.Parse("2006-01-02", dateStr)
+				if err != nil {
+					return dateStr // Return original if parsing fails
+				}
+			}
+			return t.Format("Jan, 2006")
 		},
 	}
 
@@ -67,6 +82,10 @@ func main() {
 	http.HandleFunc("/gtaa6", gtaa6Handler)
 	http.HandleFunc("/gtaa3", gtaa3Handler)
 	http.HandleFunc("/dual-momentum", dualMomentumHandler)
+
+	// Backtest routes
+	http.HandleFunc("/backtests", backtestsIndexHandler)
+	http.HandleFunc("/backtests/detail", backtestDetailHandler)
 
 	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
@@ -204,7 +223,22 @@ func gtaa6Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := templates.ExecuteTemplate(w, "gtaa6.html", strat); err != nil {
+	// Get backtests for this strategy
+	backtests, err := getBacktestsForStrategy("gtaa6")
+	if err != nil {
+		log.Printf("Error loading backtests: %v", err)
+		// Continue without backtests rather than failing
+	}
+
+	data := struct {
+		Strategy
+		Backtests []BacktestSummary
+	}{
+		Strategy:  strat,
+		Backtests: backtests,
+	}
+
+	if err := templates.ExecuteTemplate(w, "gtaa6.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Printf("Template error: %v", err)
 	}
@@ -217,7 +251,22 @@ func gtaa3Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := templates.ExecuteTemplate(w, "gtaa3.html", strat); err != nil {
+	// Get backtests for this strategy
+	backtests, err := getBacktestsForStrategy("gtaa3")
+	if err != nil {
+		log.Printf("Error loading backtests: %v", err)
+		// Continue without backtests rather than failing
+	}
+
+	data := struct {
+		Strategy
+		Backtests []BacktestSummary
+	}{
+		Strategy:  strat,
+		Backtests: backtests,
+	}
+
+	if err := templates.ExecuteTemplate(w, "gtaa3.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Printf("Template error: %v", err)
 	}
@@ -230,7 +279,22 @@ func dualMomentumHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := templates.ExecuteTemplate(w, "dual_momentum.html", strat); err != nil {
+	// Get backtests for this strategy
+	backtests, err := getBacktestsForStrategy("dual_momentum")
+	if err != nil {
+		log.Printf("Error loading backtests: %v", err)
+		// Continue without backtests rather than failing
+	}
+
+	data := struct {
+		Strategy
+		Backtests []BacktestSummary
+	}{
+		Strategy:  strat,
+		Backtests: backtests,
+	}
+
+	if err := templates.ExecuteTemplate(w, "dual_momentum.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Printf("Template error: %v", err)
 	}
@@ -495,4 +559,289 @@ func getLatestStrategy(strategyName string) (Strategy, error) {
 	strat.TotalCash = totalCash
 
 	return strat, nil
+}
+
+// Backtest data structures
+type BacktestConfig struct {
+	ID                 int
+	StrategyName       string
+	Variant            string
+	UniverseETFs       string
+	StartDate          string
+	EndDate            string
+	InitialCapital     float64
+	RebalanceFrequency string
+	TopN               sql.NullInt64
+	Description        string
+}
+
+type BacktestMetrics struct {
+	ConfigID            int
+	PeriodStart         string
+	PeriodEnd           string
+	Years               float64
+	PreTaxCAGR          float64
+	AfterTaxCAGR        float64
+	TaxDrag             float64
+	PreTaxFinal         float64
+	AfterTaxFinal       float64
+	TotalTaxes          float64
+	EffectiveTaxRate    float64
+	MaxDrawdown         sql.NullFloat64
+	MaxDDPeakDate       sql.NullString
+	MaxDDTroughDate     sql.NullString
+	MaxDDRecoveryDate   sql.NullString
+	MaxDDDurationMonths sql.NullInt64
+	NumTransactions     int
+}
+
+type MonthlyReturn struct {
+	Date              string
+	PreTaxValue       float64
+	AfterTaxValue     float64
+	PreTaxReturn      sql.NullFloat64
+	AfterTaxReturn    sql.NullFloat64
+	TaxPaidCumulative float64
+	CashWeight        float64
+	Holdings          string
+	NumHoldings       int
+}
+
+type AnnualReturn struct {
+	Year           int
+	PreTaxReturn   float64
+	AfterTaxReturn float64
+	TaxDrag        float64
+	PreTaxEnd      float64
+	AfterTaxEnd    float64
+}
+
+type BacktestSummary struct {
+	Config  BacktestConfig
+	Metrics BacktestMetrics
+}
+
+type BacktestDetail struct {
+	Config         BacktestConfig
+	Metrics        BacktestMetrics
+	AnnualReturns  []AnnualReturn
+	MonthlyReturns []MonthlyReturn
+}
+
+// Database query functions for backtests
+
+func getAllBacktestSummaries() ([]BacktestSummary, error) {
+	query := `
+		SELECT 
+			c.id, c.strategy_name, c.variant, c.universe_etfs, 
+			c.start_date, c.end_date, c.initial_capital, c.rebalance_frequency,
+			c.top_n, c.description,
+			m.period_start, m.period_end, m.years,
+			m.pre_tax_cagr, m.after_tax_cagr, m.tax_drag,
+			m.pre_tax_final, m.after_tax_final, m.total_taxes,
+			m.effective_tax_rate, m.max_drawdown, m.num_transactions
+		FROM backtest_configs c
+		JOIN backtest_metrics m ON c.id = m.config_id
+		ORDER BY m.after_tax_cagr DESC
+	`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var summaries []BacktestSummary
+	for rows.Next() {
+		var s BacktestSummary
+		err := rows.Scan(
+			&s.Config.ID, &s.Config.StrategyName, &s.Config.Variant, &s.Config.UniverseETFs,
+			&s.Config.StartDate, &s.Config.EndDate, &s.Config.InitialCapital, &s.Config.RebalanceFrequency,
+			&s.Config.TopN, &s.Config.Description,
+			&s.Metrics.PeriodStart, &s.Metrics.PeriodEnd, &s.Metrics.Years,
+			&s.Metrics.PreTaxCAGR, &s.Metrics.AfterTaxCAGR, &s.Metrics.TaxDrag,
+			&s.Metrics.PreTaxFinal, &s.Metrics.AfterTaxFinal, &s.Metrics.TotalTaxes,
+			&s.Metrics.EffectiveTaxRate, &s.Metrics.MaxDrawdown, &s.Metrics.NumTransactions,
+		)
+		if err != nil {
+			return nil, err
+		}
+		summaries = append(summaries, s)
+	}
+
+	return summaries, nil
+}
+
+func getBacktestsForStrategy(strategyName string) ([]BacktestSummary, error) {
+	query := `
+		SELECT
+			c.id, c.strategy_name, c.variant, c.universe_etfs,
+			c.start_date, c.end_date, c.initial_capital, c.rebalance_frequency,
+			c.top_n, c.description,
+			m.period_start, m.period_end, m.years,
+			m.pre_tax_cagr, m.after_tax_cagr, m.tax_drag,
+			m.pre_tax_final, m.after_tax_final, m.total_taxes,
+			m.effective_tax_rate, m.max_drawdown, m.num_transactions
+		FROM backtest_configs c
+		JOIN backtest_metrics m ON c.id = m.config_id
+		WHERE c.strategy_name = ?
+		ORDER BY m.after_tax_cagr DESC
+	`
+
+	rows, err := db.Query(query, strategyName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var summaries []BacktestSummary
+	for rows.Next() {
+		var s BacktestSummary
+		err := rows.Scan(
+			&s.Config.ID, &s.Config.StrategyName, &s.Config.Variant, &s.Config.UniverseETFs,
+			&s.Config.StartDate, &s.Config.EndDate, &s.Config.InitialCapital, &s.Config.RebalanceFrequency,
+			&s.Config.TopN, &s.Config.Description,
+			&s.Metrics.PeriodStart, &s.Metrics.PeriodEnd, &s.Metrics.Years,
+			&s.Metrics.PreTaxCAGR, &s.Metrics.AfterTaxCAGR, &s.Metrics.TaxDrag,
+			&s.Metrics.PreTaxFinal, &s.Metrics.AfterTaxFinal, &s.Metrics.TotalTaxes,
+			&s.Metrics.EffectiveTaxRate, &s.Metrics.MaxDrawdown, &s.Metrics.NumTransactions,
+		)
+		if err != nil {
+			return nil, err
+		}
+		summaries = append(summaries, s)
+	}
+
+	return summaries, nil
+}
+
+func getBacktestDetail(strategyName, variant string) (*BacktestDetail, error) {
+	// Get config and metrics
+	query := `
+		SELECT 
+			c.id, c.strategy_name, c.variant, c.universe_etfs, 
+			c.start_date, c.end_date, c.initial_capital, c.rebalance_frequency,
+			c.top_n, c.description,
+			m.period_start, m.period_end, m.years,
+			m.pre_tax_cagr, m.after_tax_cagr, m.tax_drag,
+			m.pre_tax_final, m.after_tax_final, m.total_taxes,
+			m.effective_tax_rate, m.max_drawdown, m.max_dd_peak_date,
+			m.max_dd_trough_date, m.max_dd_recovery_date, m.max_dd_duration_months,
+			m.num_transactions
+		FROM backtest_configs c
+		JOIN backtest_metrics m ON c.id = m.config_id
+		WHERE c.strategy_name = ? AND c.variant = ?
+	`
+
+	var detail BacktestDetail
+	err := db.QueryRow(query, strategyName, variant).Scan(
+		&detail.Config.ID, &detail.Config.StrategyName, &detail.Config.Variant, &detail.Config.UniverseETFs,
+		&detail.Config.StartDate, &detail.Config.EndDate, &detail.Config.InitialCapital, &detail.Config.RebalanceFrequency,
+		&detail.Config.TopN, &detail.Config.Description,
+		&detail.Metrics.PeriodStart, &detail.Metrics.PeriodEnd, &detail.Metrics.Years,
+		&detail.Metrics.PreTaxCAGR, &detail.Metrics.AfterTaxCAGR, &detail.Metrics.TaxDrag,
+		&detail.Metrics.PreTaxFinal, &detail.Metrics.AfterTaxFinal, &detail.Metrics.TotalTaxes,
+		&detail.Metrics.EffectiveTaxRate, &detail.Metrics.MaxDrawdown, &detail.Metrics.MaxDDPeakDate,
+		&detail.Metrics.MaxDDTroughDate, &detail.Metrics.MaxDDRecoveryDate, &detail.Metrics.MaxDDDurationMonths,
+		&detail.Metrics.NumTransactions,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get annual returns
+	annualQuery := `
+		SELECT year, pre_tax_return, after_tax_return, tax_drag, pre_tax_end, after_tax_end
+		FROM backtest_annual_returns
+		WHERE config_id = ?
+		ORDER BY year DESC
+	`
+	rows, err := db.Query(annualQuery, detail.Config.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var ar AnnualReturn
+		err := rows.Scan(&ar.Year, &ar.PreTaxReturn, &ar.AfterTaxReturn, &ar.TaxDrag, &ar.PreTaxEnd, &ar.AfterTaxEnd)
+		if err != nil {
+			return nil, err
+		}
+		detail.AnnualReturns = append(detail.AnnualReturns, ar)
+	}
+
+	// Get monthly returns (limited to recent 120 months for performance)
+	monthlyQuery := `
+		SELECT date, pre_tax_value, after_tax_value, pre_tax_return, after_tax_return,
+		       tax_paid_cumulative, cash_weight, holdings, num_holdings
+		FROM backtest_monthly_returns
+		WHERE config_id = ?
+		ORDER BY date DESC
+		LIMIT 120
+	`
+	rows, err = db.Query(monthlyQuery, detail.Config.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var mr MonthlyReturn
+		err := rows.Scan(&mr.Date, &mr.PreTaxValue, &mr.AfterTaxValue, &mr.PreTaxReturn, &mr.AfterTaxReturn,
+			&mr.TaxPaidCumulative, &mr.CashWeight, &mr.Holdings, &mr.NumHoldings)
+		if err != nil {
+			return nil, err
+		}
+		detail.MonthlyReturns = append(detail.MonthlyReturns, mr)
+	}
+
+	return &detail, nil
+}
+
+// HTTP Handlers for backtest pages
+
+func backtestsIndexHandler(w http.ResponseWriter, r *http.Request) {
+	summaries, err := getAllBacktestSummaries()
+	if err != nil {
+		log.Printf("Error fetching backtest summaries: %v", err)
+		http.Error(w, "Error loading backtest data", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		Summaries []BacktestSummary
+	}{
+		Summaries: summaries,
+	}
+
+	err = templates.ExecuteTemplate(w, "backtests.html", data)
+	if err != nil {
+		log.Printf("Template error: %v", err)
+		http.Error(w, "Error rendering template", http.StatusInternalServerError)
+	}
+}
+
+func backtestDetailHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse strategy and variant from URL query params
+	strategyName := r.URL.Query().Get("strategy")
+	variant := r.URL.Query().Get("variant")
+
+	if strategyName == "" || variant == "" {
+		http.Error(w, "Missing strategy or variant parameter", http.StatusBadRequest)
+		return
+	}
+
+	detail, err := getBacktestDetail(strategyName, variant)
+	if err != nil {
+		log.Printf("Error fetching backtest detail: %v", err)
+		http.Error(w, "Backtest not found", http.StatusNotFound)
+		return
+	}
+
+	err = templates.ExecuteTemplate(w, "backtest_detail.html", detail)
+	if err != nil {
+		log.Printf("Template error: %v", err)
+		http.Error(w, "Error rendering template", http.StatusInternalServerError)
+	}
 }

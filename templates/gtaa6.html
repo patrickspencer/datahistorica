@@ -18,6 +18,7 @@
                 <li><a href="/gtaa6">GTAA AGG 6</a></li>
                 <li><a href="/gtaa3">GTAA AGG 3</a></li>
                 <li><a href="/dual-momentum">Dual Momentum</a></li>
+                <li><a href="/backtests">Backtests</a></li>
             </ul>
         </nav>
 
@@ -83,6 +84,41 @@
         </div>
         {{end}}
     </div>
+
+    {{if .Backtests}}
+    <div style="margin-top: 3rem;">
+        <h3>📊 Historical Backtest Performance</h3>
+        <table class="data-table" style="margin-top: 1rem;">
+            <thead>
+                <tr>
+                    <th>Variant</th>
+                    <th class="text-right">Period</th>
+                    <th class="text-right">After-Tax CAGR</th>
+                    <th class="text-right">Final Value</th>
+                    <th class="text-right">Tax Drag</th>
+                    <th class="text-center">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Backtests}}
+                <tr>
+                    <td><strong>{{.Config.Variant}}</strong></td>
+                    <td class="text-right" style="font-size: 0.9em;">{{printf "%.1f" .Metrics.Years}}y</td>
+                    <td class="text-right positive">{{printf "%.2f%%" (mul .Metrics.AfterTaxCAGR 100)}}</td>
+                    <td class="text-right">${{printf "%.0f" .Metrics.AfterTaxFinal}}</td>
+                    <td class="text-right negative">{{printf "%.2f%%" (mul .Metrics.TaxDrag 100)}}</td>
+                    <td class="text-center">
+                        <a href="/backtests/detail?strategy={{.Config.StrategyName}}&variant={{.Config.Variant}}" style="color: #3498db; text-decoration: none;">View →</a>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        <p style="margin-top: 0.5rem; font-size: 0.9em; color: #666;">
+            Backtests use lot-level FIFO accounting with realistic tax rates. <a href="/backtests" style="color: #3498db;">See all strategies →</a>
+        </p>
+    </div>
+    {{end}}
 
     <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
         <h3>About This Strategy</h3>

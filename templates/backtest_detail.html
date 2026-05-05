@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Config.StrategyName}} - {{.Config.Variant}} - Strategy Tracker</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .detail-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .detail-header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2em;
+        }
+        .detail-header .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .metric-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+        }
+        .metric-card.highlight {
+            border-left-color: #27ae60;
+        }
+        .metric-card.warning {
+            border-left-color: #e74c3c;
+        }
+        .metric-card .label {
+            font-size: 0.85em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+        .metric-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .metric-card .subvalue {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-top: 0.25rem;
+        }
+        .returns-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .returns-table th {
+            background: #34495e;
+            color: white;
+            padding: 12px;
+            font-weight: 600;
+            text-align: left;
+        }
+        .returns-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .returns-table tr:hover {
+            background: #f8f9fa;
+        }
+        .returns-table .text-right {
+            text-align: right;
+        }
+        .returns-table .text-center {
+            text-align: center;
+        }
+        .positive { color: #27ae60; font-weight: 500; }
+        .negative { color: #e74c3c; font-weight: 500; }
+        .neutral { color: #95a5a6; }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 3rem 0 1rem 0;
+        }
+        .section-header h2 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        .section-header .info {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 1rem 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .holdings-badge {
+            display: inline-block;
+            background: #ecf0f1;
+            padding: 2px 8px;
+            margin: 2px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: #34495e;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .monthly-table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        .year-badge {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Strategy Tracker</h1>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/gtaa6">GTAA AGG 6</a></li>
+                <li><a href="/gtaa3">GTAA AGG 3</a></li>
+                <li><a href="/dual-momentum">Dual Momentum</a></li>
+                <li><a href="/backtests" class="active">Backtests</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <a href="/backtests" class="back-link">← Back to All Backtests</a>
+
+            <div class="detail-header">
+                <h1>{{.Config.StrategyName}}</h1>
+                <div class="subtitle">{{.Config.Variant}}</div>
+            </div>
+
+            {{if .Config.Description}}
+            <div class="info-box">
+                <h3>Strategy Description</h3>
+                <p>{{.Config.Description}}</p>
+                <p><strong>Universe:</strong> {{.Config.UniverseETFs}}</p>
+                <p><strong>Rebalance Frequency:</strong> {{.Config.RebalanceFrequency}} |
+                   <strong>Period:</strong> {{.Config.StartDate}} to {{.Config.EndDate}}
+                   {{if .Config.TopN.Valid}}| <strong>Top N:</strong> {{.Config.TopN.Int64}}{{end}}</p>
+            </div>
+            {{end}}
+
+            <div class="section-header">
+                <h2>Performance Summary</h2>
+                <div class="info">{{printf "%.1f" .Metrics.Years}} years of data</div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card highlight">
+                    <div class="label">After-Tax CAGR</div>
+                    <div class="value positive">{{printf "%.2f%%" (mul .Metrics.AfterTaxCAGR 100)}}</div>
+                    <div class="subvalue">Pre-Tax: {{printf "%.2f%%" (mul .Metrics.PreTaxCAGR 100)}}</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="label">Final Value</div>
+                    <div class="value">${{printf "%.0f" .Metrics.AfterTaxFinal}}</div>
+                    <div class="subvalue">From $10,000</div>
+                </div>
+
+                <div class="metric-card warning">
+                    <div class="label">Tax Drag</div>
+                    <div class="value negative">{{printf "%.2f%%" (mul .Metrics.TaxDrag 100)}}</div>
+                    <div class="subvalue">Total Taxes: ${{printf "%.0f" .Metrics.TotalTaxes}}</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="label">Effective Tax Rate</div>
+                    <div class="value">{{printf "%.1f%%" (mul .Metrics.EffectiveTaxRate 100)}}</div>
+                    <div class="subvalue">On gains</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="label">Total Transactions</div>
+                    <div class="value">{{.Metrics.NumTransactions}}</div>
+                    <div class="subvalue">{{printf "%.0f" (divf (float64 .Metrics.NumTransactions) .Metrics.Years)}} per year</div>
+                </div>
+
+                {{if .Metrics.MaxDrawdown.Valid}}
+                <div class="metric-card warning">
+                    <div class="label">Max Drawdown</div>
+                    <div class="value negative">{{printf "%.1f%%" (mul .Metrics.MaxDrawdown.Float64 100)}}</div>
+                    <div class="subvalue">Worst decline</div>
+                </div>
+                {{end}}
+            </div>
+
+            <div class="section-header">
+                <h2>Annual Returns</h2>
+                <div class="info">{{len .AnnualReturns}} years</div>
+            </div>
+
+            <table class="returns-table">
+                <thead>
+                    <tr>
+                        <th class="text-center">Year</th>
+                        <th class="text-right">Pre-Tax Return</th>
+                        <th class="text-right">After-Tax Return</th>
+                        <th class="text-right">Tax Drag</th>
+                        <th class="text-right">Pre-Tax Value</th>
+                        <th class="text-right">After-Tax Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .AnnualReturns}}
+                    <tr>
+                        <td class="text-center"><span class="year-badge">{{.Year}}</span></td>
+                        <td class="text-right {{if gt .PreTaxReturn 0.0}}positive{{else if lt .PreTaxReturn 0.0}}negative{{else}}neutral{{end}}">
+                            {{printf "%.2f%%" (mul .PreTaxReturn 100)}}
+                        </td>
+                        <td class="text-right {{if gt .AfterTaxReturn 0.0}}positive{{else if lt .AfterTaxReturn 0.0}}negative{{else}}neutral{{end}}">
+                            {{printf "%.2f%%" (mul .AfterTaxReturn 100)}}
+                        </td>
+                        <td class="text-right negative">{{printf "%.2f%%" (mul .TaxDrag 100)}}</td>
+                        <td class="text-right">${{printf "%.0f" .PreTaxEnd}}</td>
+                        <td class="text-right">${{printf "%.0f" .AfterTaxEnd}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+
+            <div class="section-header">
+                <h2>Monthly Returns</h2>
+                <div class="info">Last 120 months | {{len .MonthlyReturns}} total</div>
+            </div>
+
+            <div class="monthly-table-container">
+                <table class="returns-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th class="text-right">Pre-Tax Value</th>
+                            <th class="text-right">After-Tax Value</th>
+                            <th class="text-right">Pre-Tax Return</th>
+                            <th class="text-right">After-Tax Return</th>
+                            <th class="text-center">Holdings</th>
+                            <th class="text-right">Cash %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .MonthlyReturns}}
+                        <tr>
+                            <td>{{formatMonthYear .Date}}</td>
+                            <td class="text-right">${{printf "%.0f" .PreTaxValue}}</td>
+                            <td class="text-right">${{printf "%.0f" .AfterTaxValue}}</td>
+                            <td class="text-right {{if .PreTaxReturn.Valid}}{{if gt .PreTaxReturn.Float64 0.0}}positive{{else if lt .PreTaxReturn.Float64 0.0}}negative{{else}}neutral{{end}}{{else}}neutral{{end}}">
+                                {{if .PreTaxReturn.Valid}}{{printf "%.2f%%" (mul .PreTaxReturn.Float64 100)}}{{else}}-{{end}}
+                            </td>
+                            <td class="text-right {{if .AfterTaxReturn.Valid}}{{if gt .AfterTaxReturn.Float64 0.0}}positive{{else if lt .AfterTaxReturn.Float64 0.0}}negative{{else}}neutral{{end}}{{else}}neutral{{end}}">
+                                {{if .AfterTaxReturn.Valid}}{{printf "%.2f%%" (mul .AfterTaxReturn.Float64 100)}}{{else}}-{{end}}
+                            </td>
+                            <td class="text-center" style="font-size: 0.85em;">
+                                {{if .Holdings}}
+                                    {{.Holdings}}
+                                {{else}}
+                                    <span class="neutral">-</span>
+                                {{end}}
+                            </td>
+                            <td class="text-right">{{printf "%.0f%%" (mul .CashWeight 100)}}</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 2rem; padding: 1rem; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                <strong>📝 Methodology:</strong> All returns calculated with lot-level FIFO accounting.
+                <ul style="margin: 0.5rem 0 0 1.5rem;">
+                    <li>Short-term capital gains (≤ 1 year): 40.8% tax rate</li>
+                    <li>Long-term capital gains (> 1 year): 23.8% tax rate</li>
+                    <li>Tax loss carryover across years</li>
+                    <li>Year-end tax payments with position liquidation if needed</li>
+                    <li>Annual returns show within-year performance (Jan-Dec)</li>
+                </ul>
+            </div>
+        </main>
+
+        <footer>
+            <p>Backtest data from {{.Config.StartDate}} to {{.Config.EndDate}}. For informational purposes only. Not financial advice.</p>
+            <p>Strategy Tracker &copy; 2026</p>
+        </footer>
+    </div>
+</body>
+</html>
