@@ -32,7 +32,8 @@ func main() {
 	}
 
 	log.Printf("Opening database at: %s", dbPath)
-	db, err = sql.Open("sqlite3", dbPath)
+	// Use WAL mode for better concurrency with Litestream
+	db, err = sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_busy_timeout=5000")
 	if err != nil {
 		log.Fatal("Failed to open database:", err)
 	}
