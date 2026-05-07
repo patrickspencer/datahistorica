@@ -26,6 +26,7 @@ build/
 *.test
 *.out
 go.work
+main
 
 # IDE
 .vscode/
@@ -46,3 +47,6 @@ tmp/
 
 # Claude local settings
 .claude/settings.local.json
+
+# Local development scripts
+start-server.sh
