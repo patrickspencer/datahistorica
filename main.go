@@ -13,6 +13,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const Version = "1.0.0"
+
 var (
 	db        *sql.DB
 	templates *template.Template
@@ -202,6 +204,7 @@ type HomePage struct {
 	GTAAAssets       []AssetData
 	DualMomentum     DualMomentumData
 	SignalDate       string
+	Version          string
 }
 
 // Handlers
@@ -230,6 +233,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		GTAAAssets:   gtaaAssets,
 		DualMomentum: dualMomentum,
 		SignalDate:   signalDate,
+		Version:      Version,
 	}
 
 	log.Printf("Executing template with %d assets", len(data.GTAAAssets))
@@ -258,9 +262,11 @@ func gtaa6Handler(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Strategy
 		Backtests []BacktestSummary
+		Version   string
 	}{
 		Strategy:  strat,
 		Backtests: backtests,
+		Version:   Version,
 	}
 
 	if err := templates.ExecuteTemplate(w, "gtaa6.html", data); err != nil {
@@ -286,9 +292,11 @@ func gtaa3Handler(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Strategy
 		Backtests []BacktestSummary
+		Version   string
 	}{
 		Strategy:  strat,
 		Backtests: backtests,
+		Version:   Version,
 	}
 
 	if err := templates.ExecuteTemplate(w, "gtaa3.html", data); err != nil {
@@ -314,12 +322,14 @@ func dualMomentumHandler(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Strategy
 		Backtests []BacktestSummary
+		Version   string
 	}{
 		Strategy:  strat,
 		Backtests: backtests,
+		Version:   Version,
 	}
 
-	if err := templates.ExecuteTemplate(w, "dual_momentum.html", data); err != nil {
+	if err := templates.ExecuteTemplate(w, "dual_momentum.html", data); err != nil{
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Printf("Template error: %v", err)
 	}
@@ -680,6 +690,7 @@ type BacktestDetail struct {
 	MonthlyReturns []MonthlyReturn
 	Drawdowns      []Drawdown
 	RollingReturns []RollingReturn
+	Version        string
 }
 
 // Database query functions for backtests
@@ -895,6 +906,7 @@ func getBacktestDetail(strategyName, variant string) (*BacktestDetail, error) {
 		detail.RollingReturns = append(detail.RollingReturns, rr)
 	}
 
+	detail.Version = Version
 	return &detail, nil
 }
 
@@ -910,8 +922,10 @@ func backtestsIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Summaries []BacktestSummary
+		Version   string
 	}{
 		Summaries: summaries,
+		Version:   Version,
 	}
 
 	err = templates.ExecuteTemplate(w, "backtests.html", data)

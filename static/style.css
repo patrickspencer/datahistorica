@@ -668,7 +668,7 @@ footer {
 }
 
 h2 {
-    margin-top: 2rem;
+    margin-top: 0;
     color: var(--text-color);
 }
 
