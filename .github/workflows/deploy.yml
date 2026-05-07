@@ -20,10 +20,22 @@ jobs:
         username: ${{ secrets.SERVER_USER }}  # Should be 'deploy'
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
+          # Fix ownership and permissions
+          sudo chown -R deploy:deploy /opt/datahistorica
+          git config --global --add safe.directory /opt/datahistorica
+
+          # Pull latest code
           cd /opt/datahistorica
           git pull origin main
+
+          # Build application
           /usr/local/go/bin/go build -buildvcs=false -o main .
-          chown datahistorica:datahistorica main
+
+          # Set ownership for running service
+          sudo chown datahistorica:datahistorica main
+
+          # Restart services
           sudo systemctl restart datahistorica
           sudo systemctl reload caddy
+
           echo "✅ Deployment completed successfully!"
