@@ -128,6 +128,7 @@ type Holding struct {
 type AssetData struct {
 	Symbol      string
 	Description string
+	URL         string
 	Price       float64
 	MA200       float64
 	AboveMA     bool
@@ -147,26 +148,50 @@ var assetDescriptions = map[string]string{
 	"VBK":  "US Small Cap Growth",
 	"VBR":  "US Small Cap Value",
 	"VTV":  "US Large Cap Value",
-	"VEA":  "Developed Markets (ex-US)",
+	"VEA":  "Developed Markets",
 	"VWO":  "Emerging Markets",
 	"VNQ":  "US Real Estate",
 	"QQQ":  "US Tech (Nasdaq)",
 	"GSG":  "Commodities",
 	"IAU":  "Gold",
-	"VCIT": "Corporate Bonds (Intermediate)",
-	"VGIT": "Government Bonds (Intermediate)",
-	"VGLT": "Government Bonds (Long-Term)",
-	"IGOV": "International Government Bonds",
+	"VCIT": "Corporate Bonds (Int)",
+	"VGIT": "Gov Bonds (Int)",
+	"VGLT": "Gov Bonds (Long)",
+	"IGOV": "Intl Gov Bonds",
+}
+
+// Asset URLs - links to fund provider pages
+var assetURLs = map[string]string{
+	"MTUM": "https://www.ishares.com/us/products/251614/ishares-msci-usa-momentum-factor-etf",
+	"VBK":  "https://investor.vanguard.com/investment-products/etfs/profile/vbk",
+	"VBR":  "https://investor.vanguard.com/investment-products/etfs/profile/vbr",
+	"VTV":  "https://investor.vanguard.com/investment-products/etfs/profile/vtv",
+	"VEA":  "https://investor.vanguard.com/investment-products/etfs/profile/vea",
+	"VWO":  "https://investor.vanguard.com/investment-products/etfs/profile/vwo",
+	"VNQ":  "https://investor.vanguard.com/investment-products/etfs/profile/vnq",
+	"QQQ":  "https://www.invesco.com/us/financial-products/etfs/product-detail?productId=QQQ",
+	"GSG":  "https://www.ishares.com/us/products/239757/ishares-sp-gsci-commodityindexed-trust-fund",
+	"IAU":  "https://www.ishares.com/us/products/239561/ishares-gold-trust-fund",
+	"VCIT": "https://investor.vanguard.com/investment-products/etfs/profile/vcit",
+	"VGIT": "https://investor.vanguard.com/investment-products/etfs/profile/vgit",
+	"VGLT": "https://investor.vanguard.com/investment-products/etfs/profile/vglt",
+	"IGOV": "https://www.ishares.com/us/products/239830/ishares-international-treasury-bond-etf",
+	"VOO":  "https://investor.vanguard.com/investment-products/etfs/profile/voo",
+	"VEU":  "https://investor.vanguard.com/investment-products/etfs/profile/veu",
+	"BIL":  "https://www.ssga.com/us/en/individual/etfs/funds/spdr-bloomberg-1-3-month-t-bill-etf-bil",
 }
 
 type DualMomentumData struct {
 	USSymbol     string
+	USURL        string
 	USPrice      float64
 	USROC12M     float64
 	IntlSymbol   string
+	IntlURL      string
 	IntlPrice    float64
 	IntlROC12M   float64
 	CashSymbol   string
+	CashURL      string
 	CashPrice    float64
 	CashYield    float64
 	Selected     string
@@ -361,6 +386,11 @@ func getGTAAAssets() ([]AssetData, string, error) {
 			asset.Description = asset.Symbol
 		}
 
+		asset.URL = assetURLs[asset.Symbol]
+		if asset.URL == "" {
+			asset.URL = "https://finance.yahoo.com/quote/" + asset.Symbol
+		}
+
 		asset.AboveMA = asset.MA200 > 0 && asset.Price > asset.MA200
 		asset.Rank = rank
 		asset.IsSelected6 = rank <= 6 && asset.AboveMA
@@ -401,6 +431,7 @@ func getDualMomentumData() (DualMomentumData, error) {
 
 	// Get US data (VOO)
 	dm.USSymbol = "VOO"
+	dm.USURL = assetURLs["VOO"]
 	var usPrice, usROC sql.NullFloat64
 	err = db.QueryRow(`
 		SELECT p.adj_close, COALESCE(i.roc_12m, 0)
@@ -419,6 +450,7 @@ func getDualMomentumData() (DualMomentumData, error) {
 
 	// Get International data (VEU)
 	dm.IntlSymbol = "VEU"
+	dm.IntlURL = assetURLs["VEU"]
 	var intlPrice, intlROC sql.NullFloat64
 	err = db.QueryRow(`
 		SELECT p.adj_close, COALESCE(i.roc_12m, 0)
@@ -437,6 +469,7 @@ func getDualMomentumData() (DualMomentumData, error) {
 
 	// Get Cash data (BIL)
 	dm.CashSymbol = "BIL"
+	dm.CashURL = assetURLs["BIL"]
 	var cashPrice, cashROC sql.NullFloat64
 	err = db.QueryRow(`
 		SELECT p.adj_close, COALESCE(i.roc_12m, 0)
@@ -616,6 +649,25 @@ type AnnualReturn struct {
 	AfterTaxEnd    float64
 }
 
+type Drawdown struct {
+	Rank           int
+	Drawdown       float64
+	PeakDate       string
+	TroughDate     string
+	RecoveryDate   sql.NullString
+	DurationMonths sql.NullInt64
+}
+
+type RollingReturn struct {
+	PeriodYears    int
+	BestCAGR       float64
+	BestStartDate  string
+	BestEndDate    string
+	WorstCAGR      float64
+	WorstStartDate string
+	WorstEndDate   string
+}
+
 type BacktestSummary struct {
 	Config  BacktestConfig
 	Metrics BacktestMetrics
@@ -626,6 +678,8 @@ type BacktestDetail struct {
 	Metrics        BacktestMetrics
 	AnnualReturns  []AnnualReturn
 	MonthlyReturns []MonthlyReturn
+	Drawdowns      []Drawdown
+	RollingReturns []RollingReturn
 }
 
 // Database query functions for backtests
@@ -771,14 +825,13 @@ func getBacktestDetail(strategyName, variant string) (*BacktestDetail, error) {
 		detail.AnnualReturns = append(detail.AnnualReturns, ar)
 	}
 
-	// Get monthly returns (limited to recent 120 months for performance)
+	// Get monthly returns (all data for charts)
 	monthlyQuery := `
 		SELECT date, pre_tax_value, after_tax_value, pre_tax_return, after_tax_return,
 		       tax_paid_cumulative, cash_weight, holdings, num_holdings
 		FROM backtest_monthly_returns
 		WHERE config_id = ?
-		ORDER BY date DESC
-		LIMIT 120
+		ORDER BY date ASC
 	`
 	rows, err = db.Query(monthlyQuery, detail.Config.ID)
 	if err != nil {
@@ -794,6 +847,52 @@ func getBacktestDetail(strategyName, variant string) (*BacktestDetail, error) {
 			return nil, err
 		}
 		detail.MonthlyReturns = append(detail.MonthlyReturns, mr)
+	}
+
+	// Get drawdowns
+	drawdownQuery := `
+		SELECT rank, drawdown, peak_date, trough_date, recovery_date, duration_months
+		FROM backtest_drawdowns
+		WHERE config_id = ?
+		ORDER BY rank ASC
+	`
+	rows, err = db.Query(drawdownQuery, detail.Config.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var dd Drawdown
+		err := rows.Scan(&dd.Rank, &dd.Drawdown, &dd.PeakDate, &dd.TroughDate, &dd.RecoveryDate, &dd.DurationMonths)
+		if err != nil {
+			return nil, err
+		}
+		detail.Drawdowns = append(detail.Drawdowns, dd)
+	}
+
+	// Get rolling returns
+	rollingQuery := `
+		SELECT period_years, best_cagr, best_start_date, best_end_date,
+		       worst_cagr, worst_start_date, worst_end_date
+		FROM backtest_rolling_returns
+		WHERE config_id = ?
+		ORDER BY period_years ASC
+	`
+	rows, err = db.Query(rollingQuery, detail.Config.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var rr RollingReturn
+		err := rows.Scan(&rr.PeriodYears, &rr.BestCAGR, &rr.BestStartDate, &rr.BestEndDate,
+			&rr.WorstCAGR, &rr.WorstStartDate, &rr.WorstEndDate)
+		if err != nil {
+			return nil, err
+		}
+		detail.RollingReturns = append(detail.RollingReturns, rr)
 	}
 
 	return &detail, nil

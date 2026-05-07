@@ -5,154 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Config.StrategyName}} - {{.Config.Variant}} - Strategy Tracker</title>
     <link rel="stylesheet" href="/static/style.css">
-    <style>
-        .detail-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-        }
-        .detail-header h1 {
-            margin: 0 0 0.5rem 0;
-            font-size: 2em;
-        }
-        .detail-header .subtitle {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin: 2rem 0;
-        }
-        .metric-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-left: 4px solid #3498db;
-        }
-        .metric-card.highlight {
-            border-left-color: #27ae60;
-        }
-        .metric-card.warning {
-            border-left-color: #e74c3c;
-        }
-        .metric-card .label {
-            font-size: 0.85em;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.5rem;
-        }
-        .metric-card .value {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        .metric-card .subvalue {
-            font-size: 0.9em;
-            color: #7f8c8d;
-            margin-top: 0.25rem;
-        }
-        .returns-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 2rem 0;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .returns-table th {
-            background: #34495e;
-            color: white;
-            padding: 12px;
-            font-weight: 600;
-            text-align: left;
-        }
-        .returns-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .returns-table tr:hover {
-            background: #f8f9fa;
-        }
-        .returns-table .text-right {
-            text-align: right;
-        }
-        .returns-table .text-center {
-            text-align: center;
-        }
-        .positive { color: #27ae60; font-weight: 500; }
-        .negative { color: #e74c3c; font-weight: 500; }
-        .neutral { color: #95a5a6; }
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 3rem 0 1rem 0;
-        }
-        .section-header h2 {
-            color: #2c3e50;
-            margin: 0;
-        }
-        .section-header .info {
-            font-size: 0.9em;
-            color: #7f8c8d;
-        }
-        .info-box {
-            background: #e8f4f8;
-            border-left: 4px solid #3498db;
-            padding: 1rem 1.5rem;
-            margin: 2rem 0;
-            border-radius: 4px;
-        }
-        .info-box h3 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-        .holdings-badge {
-            display: inline-block;
-            background: #ecf0f1;
-            padding: 2px 8px;
-            margin: 2px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            color: #34495e;
-        }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 1rem;
-            color: #3498db;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        .monthly-table-container {
-            max-height: 600px;
-            overflow-y: auto;
-            margin-top: 1rem;
-        }
-        .year-badge {
-            display: inline-block;
-            background: #3498db;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>📊 Strategy Tracker</h1>
-        </header>
-
         <nav>
             <ul>
                 <li><a href="/">Home</a></li>
@@ -160,6 +16,24 @@
                 <li><a href="/gtaa3">GTAA AGG 3</a></li>
                 <li><a href="/dual-momentum">Dual Momentum</a></li>
                 <li><a href="/backtests" class="active">Backtests</a></li>
+                <li>
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </li>
             </ul>
         </nav>
 
@@ -181,6 +55,15 @@
                    {{if .Config.TopN.Valid}}| <strong>Top N:</strong> {{.Config.TopN.Int64}}{{end}}</p>
             </div>
             {{end}}
+
+            <div class="section-header">
+                <h2>Portfolio Value Over Time</h2>
+                <div class="info">After-tax performance</div>
+            </div>
+
+            <div class="card" style="padding: 2rem;">
+                <canvas id="portfolioChart" style="max-height: 400px;"></canvas>
+            </div>
 
             <div class="section-header">
                 <h2>Performance Summary</h2>
@@ -226,6 +109,74 @@
                 </div>
                 {{end}}
             </div>
+
+            {{if .Drawdowns}}
+            <div class="section-header">
+                <h2>Drawdown Analysis</h2>
+                <div class="info">Top {{len .Drawdowns}} drawdowns</div>
+            </div>
+
+            <table class="returns-table">
+                <thead>
+                    <tr>
+                        <th class="text-center">Rank</th>
+                        <th class="text-right">Drawdown</th>
+                        <th class="text-center">Peak Date</th>
+                        <th class="text-center">Trough Date</th>
+                        <th class="text-center">Recovery Date</th>
+                        <th class="text-right">Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Drawdowns}}
+                    <tr>
+                        <td class="text-center"><span class="year-badge">{{.Rank}}</span></td>
+                        <td class="text-right negative"><strong>{{printf "%.2f%%" (mul .Drawdown 100)}}</strong></td>
+                        <td class="text-center">{{formatMonthYear .PeakDate}}</td>
+                        <td class="text-center">{{formatMonthYear .TroughDate}}</td>
+                        <td class="text-center">{{if .RecoveryDate.Valid}}{{formatMonthYear .RecoveryDate.String}}{{else}}<span class="neutral">Not recovered</span>{{end}}</td>
+                        <td class="text-right">
+                            {{if .DurationMonths.Valid}}
+                                {{.DurationMonths.Int64}} mo
+                            {{else}}
+                                <span class="neutral">Ongoing</span>
+                            {{end}}
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{end}}
+
+            {{if .RollingReturns}}
+            <div class="section-header">
+                <h2>Rolling Period Analysis</h2>
+                <div class="info">Best and worst CAGR for rolling periods</div>
+            </div>
+
+            <table class="returns-table">
+                <thead>
+                    <tr>
+                        <th class="text-center">Period</th>
+                        <th class="text-right">Best CAGR</th>
+                        <th class="text-center">Best Period</th>
+                        <th class="text-right">Worst CAGR</th>
+                        <th class="text-center">Worst Period</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .RollingReturns}}
+                    <tr>
+                        <td class="text-center"><span class="year-badge">{{.PeriodYears}}-Year</span></td>
+                        <td class="text-right positive"><strong>{{printf "%.2f%%" (mul .BestCAGR 100)}}</strong></td>
+                        <td class="text-center">{{formatDate .BestStartDate}} to {{formatDate .BestEndDate}}</td>
+                        <td class="text-right negative"><strong>{{printf "%.2f%%" (mul .WorstCAGR 100)}}</strong></td>
+                        <td class="text-center">{{formatDate .WorstStartDate}} to {{formatDate .WorstEndDate}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{end}}
 
             <div class="section-header">
                 <h2>Annual Returns</h2>
@@ -305,7 +256,7 @@
                 </table>
             </div>
 
-            <div style="margin-top: 2rem; padding: 1rem; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+            <div class="warning-box">
                 <strong>📝 Methodology:</strong> All returns calculated with lot-level FIFO accounting.
                 <ul style="margin: 0.5rem 0 0 1.5rem;">
                     <li>Short-term capital gains (≤ 1 year): 40.8% tax rate</li>
@@ -322,5 +273,173 @@
             <p>Strategy Tracker &copy; 2026</p>
         </footer>
     </div>
+
+    <script>
+        // Theme management
+        (function() {
+            'use strict';
+
+            // Apply theme
+            function applyTheme(theme) {
+                const root = document.documentElement;
+                if (theme === 'dark') {
+                    root.setAttribute('data-theme', 'dark');
+                } else {
+                    root.removeAttribute('data-theme');
+                }
+                localStorage.setItem('theme', theme);
+            }
+
+            // Get current theme
+            function getCurrentTheme() {
+                return document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light';
+            }
+
+            // Initialize theme immediately to prevent flash
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                applyTheme('dark');
+            }
+
+            // Set up toggle button when DOM is ready
+            window.addEventListener('DOMContentLoaded', function() {
+                const toggleButton = document.getElementById('theme-toggle');
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', function() {
+                        const currentTheme = getCurrentTheme();
+                        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                        applyTheme(newTheme);
+                    });
+                }
+            });
+        })();
+
+        // Portfolio performance chart
+        (function() {
+            const monthlyData = [
+                {{range .MonthlyReturns}}
+                {
+                    date: '{{.Date}}',
+                    afterTaxValue: {{.AfterTaxValue}},
+                    preTaxValue: {{.PreTaxValue}}
+                },
+                {{end}}
+            ];
+
+            // Prepare data for Chart.js
+            const labels = monthlyData.map(d => d.date);
+            const afterTaxValues = monthlyData.map(d => d.afterTaxValue);
+            const preTaxValues = monthlyData.map(d => d.preTaxValue);
+
+            // Get the canvas context
+            const ctx = document.getElementById('portfolioChart').getContext('2d');
+
+            // Create the chart
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'After-Tax Value',
+                            data: afterTaxValues,
+                            borderColor: 'rgb(52, 152, 219)',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1,
+                            pointRadius: 0,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: 'Pre-Tax Value',
+                            data: preTaxValues,
+                            borderColor: 'rgb(46, 204, 113)',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1,
+                            pointRadius: 0,
+                            pointHoverRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return new Date(context[0].label).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'short'
+                                    });
+                                },
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += '$' + context.parsed.y.toLocaleString('en-US', {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    });
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                autoSkip: true,
+                                maxTicksLimit: 20,
+                                callback: function(value, index, ticks) {
+                                    const date = new Date(this.getLabelForValue(value));
+                                    return date.toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'short'
+                                    });
+                                }
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Portfolio Value ($)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString('en-US', {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
