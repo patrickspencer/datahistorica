@@ -22,7 +22,8 @@ jobs:
         script: |
           cd /opt/datahistorica
           git pull origin main
-          /usr/local/go/bin/go build -o main .
+          /usr/local/go/bin/go build -buildvcs=false -o main .
+          chown datahistorica:datahistorica main
           sudo systemctl restart datahistorica
           sudo systemctl reload caddy
           echo "✅ Deployment completed successfully!"
