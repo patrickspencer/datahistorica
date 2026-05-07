@@ -159,7 +159,7 @@
                     <strong>Signal Date:</strong> {{formatDate .DualMomentum.SignalDate}}<br>
                     <strong>Strategy:</strong> US vs International equity selection based on 12-month ROC<br>
                     <strong>Current Selection:</strong> <strong>{{.DualMomentum.Selected}}</strong><br>
-                    <strong>Selection Logic:</strong> If both have positive ROC: select higher. If only one positive: select that one. If both negative: go to cash (BIL).
+                    <strong>Selection Logic:</strong> If both equity fund 12-month ROC is higher than T-Bill yield, choose the highest of the two. If only one is higher, choose that. If neither are higher, go to T-Bills.
                 </div>
             </div>
         </main>
