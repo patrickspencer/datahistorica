@@ -5,95 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Backtest Results - Strategy Tracker</title>
     <link rel="stylesheet" href="/static/style.css">
-    <style>
-        .backtest-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 2rem 0;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .backtest-table th {
-            background: #2c3e50;
-            color: white;
-            padding: 12px;
-            font-weight: 600;
-            text-align: left;
-        }
-        .backtest-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .backtest-table tr:hover {
-            background: #f5f5f5;
-        }
-        .backtest-table .text-right {
-            text-align: right;
-        }
-        .backtest-table .text-center {
-            text-align: center;
-        }
-        .rank-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-        .rank-1 { background: #FFD700; color: #333; }
-        .rank-2 { background: #C0C0C0; color: #333; }
-        .rank-3 { background: #CD7F32; color: white; }
-        .positive { color: #27ae60; font-weight: 500; }
-        .negative { color: #e74c3c; font-weight: 500; }
-        .strategy-link {
-            color: #3498db;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .strategy-link:hover {
-            text-decoration: underline;
-        }
-        .meta-box {
-            background: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 4px;
-            margin: 1rem 0 2rem 0;
-        }
-        .meta-box h3 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-        .key-insights {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-            margin: 2rem 0;
-        }
-        .insight-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-left: 4px solid #3498db;
-        }
-        .insight-card h4 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-        .insight-card .metric {
-            font-size: 2em;
-            font-weight: bold;
-            color: #27ae60;
-            margin: 0.5rem 0;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>📊 Backtest Results</h1>
-        </header>
-
         <nav>
             <ul>
                 <li><a href="/">Home</a></li>
@@ -101,6 +15,24 @@
                 <li><a href="/gtaa3">GTAA AGG 3</a></li>
                 <li><a href="/dual-momentum">Dual Momentum</a></li>
                 <li><a href="/backtests" class="active">Backtests</a></li>
+                <li>
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </li>
             </ul>
         </nav>
 
@@ -141,7 +73,7 @@
                 </tbody>
             </table>
 
-            <div style="margin-top: 2rem; padding: 1rem; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+            <div class="warning-box">
                 <strong>📝 Note:</strong> All backtests use lot-level FIFO accounting with realistic tax assumptions:
                 <ul style="margin: 0.5rem 0 0 1.5rem;">
                     <li>Short-term gains (≤ 1 year): 40.8% tax rate</li>
@@ -157,5 +89,48 @@
             <p>Strategy Tracker &copy; 2026</p>
         </footer>
     </div>
+
+    <script>
+        // Theme management
+        (function() {
+            'use strict';
+
+            // Apply theme
+            function applyTheme(theme) {
+                const root = document.documentElement;
+                if (theme === 'dark') {
+                    root.setAttribute('data-theme', 'dark');
+                } else {
+                    root.removeAttribute('data-theme');
+                }
+                localStorage.setItem('theme', theme);
+            }
+
+            // Get current theme
+            function getCurrentTheme() {
+                return document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light';
+            }
+
+            // Initialize theme immediately to prevent flash
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                applyTheme('dark');
+            }
+
+            // Set up toggle button when DOM is ready
+            window.addEventListener('DOMContentLoaded', function() {
+                const toggleButton = document.getElementById('theme-toggle');
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', function() {
+                        const currentTheme = getCurrentTheme();
+                        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                        applyTheme(newTheme);
+                    });
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
