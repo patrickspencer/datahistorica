@@ -77,35 +77,35 @@
                     </colgroup>
                     <thead>
                         <tr>
-                            <th class="text-center">Rank</th>
-                            <th>Asset Class</th>
-                            <th>Ticker</th>
-                            <th class="text-right">Price</th>
-                            <th class="text-right">MA200</th>
-                            <th class="text-center">Above MA?</th>
-                            <th class="text-right">Avg ROC</th>
-                            <th class="text-right">1M ROC</th>
-                            <th class="text-right">3M ROC</th>
-                            <th class="text-right">6M ROC</th>
-                            <th class="text-right">12M ROC</th>
-                            <th class="text-right">Investment</th>
+                            <th class="text-left">Rank</th>
+                            <th class="text-left">Asset Class</th>
+                            <th class="text-left">Ticker</th>
+                            <th class="text-left">Price</th>
+                            <th class="text-left">MA200</th>
+                            <th class="text-left">Above MA?</th>
+                            <th class="text-left">Avg ROC</th>
+                            <th class="text-left">1M ROC</th>
+                            <th class="text-left">3M ROC</th>
+                            <th class="text-left">6M ROC</th>
+                            <th class="text-left">12M ROC</th>
+                            <th class="text-left">Investment</th>
                         </tr>
                     </thead>
                     <tbody>
                         {{range .GTAAAssets}}
                         <tr {{if .IsSelected6}}class="selected"{{end}} data-above-ma="{{.AboveMA}}" data-is-selected="{{.IsSelected6}}">
-                            <td class="text-center">{{.Rank}}</td>
-                            <td>{{.Description}}</td>
-                            <td><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Symbol}}</a></td>
-                            <td class="text-right">${{printf "%.2f" .Price}}</td>
-                            <td class="text-right">${{printf "%.2f" .MA200}}</td>
-                            <td class="text-center">{{if .AboveMA}}✓{{else}}✗{{end}}</td>
-                            <td class="text-right {{if gt .AvgROC 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .AvgROC 100.0)}}%</td>
-                            <td class="text-right {{if gt .ROC1M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC1M 100.0)}}%</td>
-                            <td class="text-right {{if gt .ROC3M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC3M 100.0)}}%</td>
-                            <td class="text-right {{if gt .ROC6M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC6M 100.0)}}%</td>
-                            <td class="text-right {{if gt .ROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC12M 100.0)}}%</td>
-                            <td class="text-right investment-amount">-</td>
+                            <td class="text-left">{{.Rank}}</td>
+                            <td class="text-left">{{.Description}}</td>
+                            <td class="text-left"><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Symbol}}</a></td>
+                            <td class="text-left">${{printf "%.2f" .Price}}</td>
+                            <td class="text-left">${{printf "%.2f" .MA200}}</td>
+                            <td class="text-left">{{if .AboveMA}}✓{{else}}✗{{end}}</td>
+                            <td class="text-left {{if gt .AvgROC 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .AvgROC 100.0)}}%</td>
+                            <td class="text-left {{if gt .ROC1M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC1M 100.0)}}%</td>
+                            <td class="text-left {{if gt .ROC3M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC3M 100.0)}}%</td>
+                            <td class="text-left {{if gt .ROC6M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC6M 100.0)}}%</td>
+                            <td class="text-left {{if gt .ROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC12M 100.0)}}%</td>
+                            <td class="text-left investment-amount">-</td>
                         </tr>
                         {{end}}
                     </tbody>
