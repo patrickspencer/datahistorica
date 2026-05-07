@@ -431,6 +431,16 @@ footer {
     font-weight: 500;
 }
 
+:root[data-theme="dark"] .positive {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+:root[data-theme="dark"] .negative {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
 .neutral {
     color: var(--cash-color);
 }
@@ -653,7 +663,7 @@ footer {
 }
 
 :root[data-theme="dark"] .data-table tr.selected {
-    background: rgba(129, 201, 149, 0.2);
+    background: #353535;
 }
 
 .text-left {
