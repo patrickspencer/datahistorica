@@ -9,12 +9,10 @@ Your private SSH key for accessing the server.
 
 To get your private key:
 ```bash
-cat ~/.ssh/id_rsa
-# or
 cat ~/.ssh/id_ed25519
 ```
 
-Copy the entire output including `-----BEGIN ... KEY-----` and `-----END ... KEY-----`
+Copy the entire output including `-----BEGIN OPENSSH PRIVATE KEY-----` and `-----END OPENSSH PRIVATE KEY-----`
 
 ### SERVER_HOST
 ```
@@ -23,7 +21,7 @@ Copy the entire output including `-----BEGIN ... KEY-----` and `-----END ... KEY
 
 ### SERVER_USER
 ```
-root
+deploy
 ```
 
 ## How It Works
