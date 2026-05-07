@@ -620,6 +620,7 @@ footer {
     background: var(--card-bg);
     box-shadow: 0 2px 4px var(--shadow-color);
     font-size: 0.9em;
+    table-layout: fixed;
 }
 
 .data-table th {
