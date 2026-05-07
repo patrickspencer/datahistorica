@@ -9,7 +9,8 @@
 <body>
     <div class="container">
         <nav>
-            <ul>
+            <button class="hamburger" id="hamburger" aria-label="Toggle menu">☰</button>
+            <ul id="nav-menu">
                 <li><a href="/">Home</a></li>
                 <li><a href="/gtaa6">GTAA AGG 6</a></li>
                 <li><a href="/gtaa3">GTAA AGG 3</a></li>
@@ -224,6 +225,28 @@
                     });
                 }
             });
+        })();
+
+        // Hamburger menu toggle
+        (function() {
+            const hamburger = document.getElementById('hamburger');
+            const navMenu = document.getElementById('nav-menu');
+
+            if (hamburger && navMenu) {
+                hamburger.addEventListener('click', function() {
+                    navMenu.classList.toggle('active');
+                    hamburger.textContent = navMenu.classList.contains('active') ? '✕' : '☰';
+                });
+
+                // Close menu when clicking a link
+                const navLinks = navMenu.querySelectorAll('a');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        navMenu.classList.remove('active');
+                        hamburger.textContent = '☰';
+                    });
+                });
+            }
         })();
 
         // Filter toggle for above MA

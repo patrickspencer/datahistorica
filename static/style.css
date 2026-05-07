@@ -92,11 +92,23 @@ header p {
 
 /* Navigation */
 nav {
-    background: var(--secondary-color);
-    padding: 1rem;
+    background: var(--card-bg);
+    padding: 0.75rem 1rem;
     border-radius: 8px;
     margin-bottom: 2rem;
     transition: background-color 0.3s ease;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    position: relative;
+}
+
+.hamburger {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-color);
+    padding: 0.5rem;
 }
 
 nav ul {
@@ -105,10 +117,11 @@ nav ul {
     flex-wrap: wrap;
     justify-content: center;
     gap: 1rem;
+    align-items: center;
 }
 
 nav a {
-    color: white;
+    color: var(--text-color);
     text-decoration: none;
     padding: 0.5rem 1rem;
     border-radius: 4px;
@@ -116,7 +129,39 @@ nav a {
 }
 
 nav a:hover {
-    background: var(--accent-color);
+    background: var(--table-row-hover);
+}
+
+/* Mobile Navigation */
+@media (max-width: 768px) {
+    .hamburger {
+        display: block;
+        position: absolute;
+        right: 1rem;
+        top: 0.5rem;
+        z-index: 1000;
+    }
+
+    nav ul {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        padding-top: 3rem;
+    }
+
+    nav ul.active {
+        display: flex;
+    }
+
+    nav li {
+        width: 100%;
+        text-align: center;
+    }
+
+    nav a {
+        display: block;
+        width: 100%;
+    }
 }
 
 /* Grid Layout */
