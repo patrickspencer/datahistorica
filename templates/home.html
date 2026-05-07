@@ -116,7 +116,6 @@
                             <th class="text-left">Ticker</th>
                             <th class="text-right">Price</th>
                             <th class="text-right">12M ROC / Yield</th>
-                            <th class="text-center">Selected</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -126,14 +125,12 @@
                             <td class="text-left"><a href="{{.DualMomentum.USURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.USSymbol}}</a></td>
                             <td class="text-right">${{printf "%.2f" .DualMomentum.USPrice}}</td>
                             <td class="text-right {{if gt .DualMomentum.USROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.USROC12M 100.0)}}%</td>
-                            <td class="text-center">{{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}✓{{end}}</td>
                         </tr>
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}class="selected"{{end}}>
                             <td class="text-left">International Equity</td>
                             <td class="text-left"><a href="{{.DualMomentum.IntlURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.IntlSymbol}}</a></td>
                             <td class="text-right">${{printf "%.2f" .DualMomentum.IntlPrice}}</td>
                             <td class="text-right {{if gt .DualMomentum.IntlROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.IntlROC12M 100.0)}}%</td>
-                            <td class="text-center">{{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}✓{{end}}</td>
                         </tr>
                         {{else}}
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}class="selected"{{end}}>
@@ -141,14 +138,12 @@
                             <td class="text-left"><a href="{{.DualMomentum.IntlURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.IntlSymbol}}</a></td>
                             <td class="text-right">${{printf "%.2f" .DualMomentum.IntlPrice}}</td>
                             <td class="text-right {{if gt .DualMomentum.IntlROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.IntlROC12M 100.0)}}%</td>
-                            <td class="text-center">{{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}✓{{end}}</td>
                         </tr>
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}class="selected"{{end}}>
                             <td class="text-left">US Equity</td>
                             <td class="text-left"><a href="{{.DualMomentum.USURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.USSymbol}}</a></td>
                             <td class="text-right">${{printf "%.2f" .DualMomentum.USPrice}}</td>
                             <td class="text-right {{if gt .DualMomentum.USROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.USROC12M 100.0)}}%</td>
-                            <td class="text-center">{{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}✓{{end}}</td>
                         </tr>
                         {{end}}
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.CashSymbol}}class="selected"{{end}}>
