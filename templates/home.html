@@ -5,106 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfolio Tracker</title>
     <link rel="stylesheet" href="/static/style.css">
-    <style>
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 2rem 0;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .data-table th {
-            background: #2c3e50;
-            color: white;
-            padding: 12px;
-            font-weight: 600;
-        }
-        .data-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .data-table tr:hover {
-            background: #f5f5f5;
-        }
-        .data-table tr.selected {
-            background: #e8f5e9;
-            font-weight: 500;
-        }
-        .positive {
-            color: #27ae60;
-        }
-        .negative {
-            color: #e74c3c;
-        }
-        .text-left {
-            text-align: left;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .text-right {
-            text-align: right;
-        }
-        h2 {
-            margin-top: 2rem;
-            color: #2c3e50;
-        }
-        .meta {
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 4px;
-            margin: 1rem 0;
-        }
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        .toggle-switch input:checked + .toggle-slider {
-            background-color: #27ae60;
-        }
-        .toggle-switch input:checked + .toggle-slider:before {
-            transform: translateX(26px);
-        }
-        .data-table tr.hidden-row {
-            display: none;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>📊 Portfolio Tracker</h1>
-        </header>
-
         <nav>
             <ul>
                 <li><a href="/">Home</a></li>
@@ -112,26 +15,42 @@
                 <li><a href="/gtaa3">GTAA AGG 3</a></li>
                 <li><a href="/dual-momentum">Dual Momentum</a></li>
                 <li><a href="/backtests">Backtests</a></li>
+                <li>
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </li>
             </ul>
         </nav>
 
         <main>
             <div class="card">
                 <h2>GTAA Asset Rankings</h2>
-                <div class="meta">
-                    <strong>Signal Date:</strong> {{formatDate .SignalDate}}<br>
-                    <strong>Strategy:</strong> Global Tactical Asset Allocation<br>
-                    <strong>Selection Criteria:</strong> Top assets by average momentum (1M, 3M, 6M, 12M ROC) above 200-day MA
-                </div>
 
-                <div style="margin: 1rem 0; display: flex; align-items: center; gap: 20px; justify-content: space-between;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <label for="investmentAmount" style="font-weight: 500;">Investment Amount:</label>
-                        <input type="number" id="investmentAmount" placeholder="Enter amount"
-                               style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 150px; font-size: 1rem;">
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="investmentAmount">Investment Amount:</label>
+                        <input type="number" id="investmentAmount" placeholder="Enter amount" class="calculator-input" style="width: 150px;">
                     </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <label for="filterAboveMA" style="cursor: pointer; user-select: none;">
+                    <div class="filter-group">
+                        <label for="numHoldings">Number of Holdings:</label>
+                        <input type="number" id="numHoldings" placeholder="6" value="6" min="1" max="14" class="calculator-input" style="width: 80px;">
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterAboveMA">
                             Show only assets above 200-day MA
                         </label>
                         <label class="toggle-switch">
@@ -150,12 +69,12 @@
                             <th class="text-right">Price</th>
                             <th class="text-right">MA200</th>
                             <th class="text-center">Above MA?</th>
-                            <th class="text-right">Amount to Invest</th>
                             <th class="text-right">Avg ROC</th>
                             <th class="text-right">1M ROC</th>
                             <th class="text-right">3M ROC</th>
                             <th class="text-right">6M ROC</th>
                             <th class="text-right">12M ROC</th>
+                            <th class="text-right">Investment</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -163,33 +82,32 @@
                         <tr {{if .IsSelected6}}class="selected"{{end}} data-above-ma="{{.AboveMA}}" data-is-selected="{{.IsSelected6}}">
                             <td class="text-center">{{.Rank}}</td>
                             <td>{{.Description}}</td>
-                            <td><strong>{{.Symbol}}</strong></td>
+                            <td><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Symbol}}</a></td>
                             <td class="text-right">${{printf "%.2f" .Price}}</td>
                             <td class="text-right">${{printf "%.2f" .MA200}}</td>
                             <td class="text-center">{{if .AboveMA}}✓{{else}}✗{{end}}</td>
-                            <td class="text-right investment-amount" style="font-weight: 500;">-</td>
                             <td class="text-right {{if gt .AvgROC 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .AvgROC 100.0)}}%</td>
                             <td class="text-right {{if gt .ROC1M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC1M 100.0)}}%</td>
                             <td class="text-right {{if gt .ROC3M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC3M 100.0)}}%</td>
                             <td class="text-right {{if gt .ROC6M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC6M 100.0)}}%</td>
                             <td class="text-right {{if gt .ROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC12M 100.0)}}%</td>
+                            <td class="text-right investment-amount">-</td>
                         </tr>
                         {{end}}
                     </tbody>
                 </table>
 
-                <p class="gtaa-note" style="margin-top: 1rem; font-size: 0.9em; color: #666;">
-                    <strong>Note:</strong> Green-highlighted rows indicate the top 6 assets selected for GTAA AGG 6 strategy (must be above MA200).
-                </p>
+                <div class="meta">
+                    <strong>Signal Date:</strong> {{formatDate .SignalDate}}<br>
+                    <strong>Strategy:</strong> Global Tactical Asset Allocation<br>
+                    <strong>Selection Criteria:</strong> Top assets by average momentum (1M, 3M, 6M, 12M ROC) above 200-day MA
+                </div>
+
+                <p class="gtaa-note note-text"></p>
             </div>
 
             <div class="card">
                 <h2>Dual Momentum ROC12</h2>
-                <div class="meta">
-                    <strong>Signal Date:</strong> {{formatDate .DualMomentum.SignalDate}}<br>
-                    <strong>Strategy:</strong> US vs International equity selection based on 12-month ROC<br>
-                    <strong>Current Selection:</strong> <strong>{{.DualMomentum.Selected}}</strong>
-                </div>
 
                 <table class="data-table">
                     <thead>
@@ -205,14 +123,14 @@
                         {{if gt .DualMomentum.USROC12M .DualMomentum.IntlROC12M}}
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}class="selected"{{end}}>
                             <td class="text-left">US Equity</td>
-                            <td class="text-left"><strong>{{.DualMomentum.USSymbol}}</strong></td>
+                            <td class="text-left"><a href="{{.DualMomentum.USURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.USSymbol}}</a></td>
                             <td class="text-right">${{printf "%.2f" .DualMomentum.USPrice}}</td>
                             <td class="text-right {{if gt .DualMomentum.USROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.USROC12M 100.0)}}%</td>
                             <td class="text-center">{{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}✓{{end}}</td>
                         </tr>
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}class="selected"{{end}}>
                             <td class="text-left">International Equity</td>
-                            <td class="text-left"><strong>{{.DualMomentum.IntlSymbol}}</strong></td>
+                            <td class="text-left"><a href="{{.DualMomentum.IntlURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.IntlSymbol}}</a></td>
                             <td class="text-right">${{printf "%.2f" .DualMomentum.IntlPrice}}</td>
                             <td class="text-right {{if gt .DualMomentum.IntlROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.IntlROC12M 100.0)}}%</td>
                             <td class="text-center">{{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}✓{{end}}</td>
@@ -220,14 +138,14 @@
                         {{else}}
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}class="selected"{{end}}>
                             <td class="text-left">International Equity</td>
-                            <td class="text-left"><strong>{{.DualMomentum.IntlSymbol}}</strong></td>
+                            <td class="text-left"><a href="{{.DualMomentum.IntlURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.IntlSymbol}}</a></td>
                             <td class="text-right">${{printf "%.2f" .DualMomentum.IntlPrice}}</td>
                             <td class="text-right {{if gt .DualMomentum.IntlROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.IntlROC12M 100.0)}}%</td>
                             <td class="text-center">{{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}✓{{end}}</td>
                         </tr>
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}class="selected"{{end}}>
                             <td class="text-left">US Equity</td>
-                            <td class="text-left"><strong>{{.DualMomentum.USSymbol}}</strong></td>
+                            <td class="text-left"><a href="{{.DualMomentum.USURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.USSymbol}}</a></td>
                             <td class="text-right">${{printf "%.2f" .DualMomentum.USPrice}}</td>
                             <td class="text-right {{if gt .DualMomentum.USROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.USROC12M 100.0)}}%</td>
                             <td class="text-center">{{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}✓{{end}}</td>
@@ -235,7 +153,7 @@
                         {{end}}
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.CashSymbol}}class="selected"{{end}}>
                             <td class="text-left">Cash / T-Bills</td>
-                            <td class="text-left"><strong>{{.DualMomentum.CashSymbol}}</strong></td>
+                            <td class="text-left"><a href="{{.DualMomentum.CashURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.CashSymbol}}</a></td>
                             <td class="text-right">${{printf "%.2f" .DualMomentum.CashPrice}}</td>
                             <td class="text-right positive">{{printf "%.2f" (mul .DualMomentum.CashYield 100.0)}}%</td>
                             <td class="text-center">{{if eq .DualMomentum.Selected .DualMomentum.CashSymbol}}✓{{end}}</td>
@@ -243,35 +161,15 @@
                     </tbody>
                 </table>
 
-                <p style="margin-top: 1rem; font-size: 0.9em; color: #666;">
+                <div class="meta">
+                    <strong>Signal Date:</strong> {{formatDate .DualMomentum.SignalDate}}<br>
+                    <strong>Strategy:</strong> US vs International equity selection based on 12-month ROC<br>
+                    <strong>Current Selection:</strong> <strong>{{.DualMomentum.Selected}}</strong>
+                </div>
+
+                <p class="note-text">
                     <strong>Selection Logic:</strong> If both have positive ROC: select higher. If only one positive: select that one. If both negative: go to cash (BIL).
                 </p>
-            </div>
-            <div class="card" style="margin-top: 2rem;">
-                <h3>Position Size Calculator</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
-                    <div>
-                        <label for="investAmount" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
-                            Total Investment Amount
-                        </label>
-                        <input
-                            type="number"
-                            id="investAmount"
-                            placeholder="Enter amount"
-                            style="width: 100%; padding: 10px; font-size: 16px; border: 2px solid #ddd; border-radius: 4px;"
-                        >
-                    </div>
-                    <div style="display: flex; gap: 2rem; align-items: center;">
-                        <div style="flex: 1; background: #e3f2fd; padding: 1rem; border-radius: 4px; text-align: center;">
-                            <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.25rem;">GTAA 6 (1/6 each)</div>
-                            <div style="font-size: 1.5rem; font-weight: 600; color: #1976d2;" id="sixth">$0.00</div>
-                        </div>
-                        <div style="flex: 1; background: #e8f5e9; padding: 1rem; border-radius: 4px; text-align: center;">
-                            <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.25rem;">GTAA 3 (1/3 each)</div>
-                            <div style="font-size: 1.5rem; font-weight: 600; color: #388e3c;" id="third">$0.00</div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </main>
 
@@ -282,6 +180,47 @@
     </div>
 
     <script>
+        // Theme management
+        (function() {
+            'use strict';
+
+            // Apply theme
+            function applyTheme(theme) {
+                const root = document.documentElement;
+                if (theme === 'dark') {
+                    root.setAttribute('data-theme', 'dark');
+                } else {
+                    root.removeAttribute('data-theme');
+                }
+                localStorage.setItem('theme', theme);
+            }
+
+            // Get current theme
+            function getCurrentTheme() {
+                return document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light';
+            }
+
+            // Initialize theme immediately to prevent flash
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                applyTheme('dark');
+            }
+
+            // Set up toggle button when DOM is ready
+            window.addEventListener('DOMContentLoaded', function() {
+                const toggleButton = document.getElementById('theme-toggle');
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', function() {
+                        const currentTheme = getCurrentTheme();
+                        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                        applyTheme(newTheme);
+                    });
+                }
+            });
+        })();
+
         // Filter toggle for above MA
         document.getElementById('filterAboveMA').addEventListener('change', function() {
             const rows = document.querySelectorAll('.data-table tbody tr[data-above-ma]');
@@ -297,74 +236,74 @@
             });
         });
 
-        // Position size calculator
-        document.getElementById('investAmount').addEventListener('input', function() {
-            const amount = parseFloat(this.value) || 0;
-            const sixth = amount / 6;
-            const third = amount / 3;
+        // Investment amount calculator for GTAA table
+        function updateInvestmentAmounts() {
+            const totalAmount = parseFloat(document.getElementById('investmentAmount').value) || 0;
+            const numHoldings = parseInt(document.getElementById('numHoldings').value) || 6;
+            const slotAmount = totalAmount / numHoldings;
 
-            document.getElementById('sixth').textContent = '$' + sixth.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
+            // Get all rows in the GTAA table (sorted by rank)
+            const rows = document.querySelectorAll('.data-table tbody tr[data-above-ma]');
+
+            // Convert to array and sort by rank
+            const rowsArray = Array.from(rows);
+            rowsArray.sort((a, b) => {
+                const rankA = parseInt(a.querySelector('td:first-child').textContent);
+                const rankB = parseInt(b.querySelector('td:first-child').textContent);
+                return rankA - rankB;
             });
 
-            document.getElementById('third').textContent = '$' + third.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        });
-
-        // Investment amount calculator for GTAA 6 table
-        document.getElementById('investmentAmount').addEventListener('input', function() {
-            const totalAmount = parseFloat(this.value) || 0;
-            const slotAmount = totalAmount / 6; // Always 6 slots
-
-            // Get all rows in the GTAA table
-            const rows = document.querySelectorAll('.data-table tbody tr[data-is-selected]');
-            let selectedCount = 0;
-
-            rows.forEach(row => {
-                const isSelected = row.getAttribute('data-is-selected') === 'true';
+            // Update amounts and highlighting for top N holdings
+            rowsArray.forEach((row, index) => {
                 const amountCell = row.querySelector('.investment-amount');
+                const isAboveMA = row.getAttribute('data-above-ma') === 'true';
 
-                if (isSelected) {
-                    selectedCount++;
-                    if (totalAmount > 0) {
-                        amountCell.textContent = '$' + slotAmount.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        });
-                        amountCell.style.color = '#27ae60';
-                    } else {
-                        amountCell.textContent = '-';
-                        amountCell.style.color = '';
-                    }
+                // Highlight top N assets that are above MA200
+                if (index < numHoldings && isAboveMA) {
+                    row.classList.add('selected');
+                } else {
+                    row.classList.remove('selected');
+                }
+
+                // Update investment amounts
+                if (index < numHoldings && totalAmount > 0) {
+                    amountCell.textContent = '$' + slotAmount.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    amountCell.classList.add('positive');
                 } else {
                     amountCell.textContent = '-';
-                    amountCell.style.color = '';
+                    amountCell.classList.remove('positive');
                 }
             });
 
-            // Update or create BIL allocation message
-            updateBILMessage(selectedCount, slotAmount, totalAmount);
-        });
+            // Update BIL allocation message
+            updateBILMessage(numHoldings, slotAmount, totalAmount);
+        }
 
-        function updateBILMessage(selectedCount, slotAmount, totalAmount) {
+        function updateBILMessage(numHoldings, slotAmount, totalAmount) {
             const noteElement = document.querySelector('.gtaa-note');
-            const emptySlots = 6 - selectedCount;
+
+            // Count how many assets are above MA200
+            const rowsAboveMA = document.querySelectorAll('.data-table tbody tr[data-above-ma="true"]');
+            const assetsAboveMA = rowsAboveMA.length;
+            const emptySlots = Math.max(0, numHoldings - assetsAboveMA);
 
             if (emptySlots > 0 && totalAmount > 0) {
                 const bilAmount = emptySlots * slotAmount;
-                noteElement.innerHTML = '<strong>Note:</strong> Green-highlighted rows indicate the top 6 assets selected for GTAA AGG 6 strategy (must be above MA200). ' +
-                    '<br><strong style="color: #e74c3c;">Allocation to BIL (Cash):</strong> ' + emptySlots + ' slot' + (emptySlots > 1 ? 's' : '') + ' = <strong style="color: #e74c3c;">$' +
+                noteElement.innerHTML = '<strong class="negative">Allocation to BIL (Cash):</strong> ' + emptySlots + ' slot' + (emptySlots > 1 ? 's' : '') + ' = <strong class="negative">$' +
                     bilAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</strong>';
             } else if (totalAmount > 0) {
-                noteElement.innerHTML = '<strong>Note:</strong> Green-highlighted rows indicate the top 6 assets selected for GTAA AGG 6 strategy (must be above MA200). ' +
-                    '<br><strong style="color: #27ae60;">All 6 slots filled - no BIL allocation needed.</strong>';
+                noteElement.innerHTML = '<strong class="positive">All ' + numHoldings + ' slots filled - no BIL allocation needed.</strong>';
             } else {
-                noteElement.innerHTML = '<strong>Note:</strong> Green-highlighted rows indicate the top 6 assets selected for GTAA AGG 6 strategy (must be above MA200).';
+                noteElement.innerHTML = '';
             }
         }
+
+        // Add event listeners
+        document.getElementById('investmentAmount').addEventListener('input', updateInvestmentAmounts);
+        document.getElementById('numHoldings').addEventListener('input', updateInvestmentAmounts);
     </script>
 </body>
 </html>

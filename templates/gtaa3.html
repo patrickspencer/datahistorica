@@ -8,10 +8,6 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>📊 Portfolio Tracker</h1>
-        </header>
-
         <nav>
             <ul>
                 <li><a href="/">Home</a></li>
@@ -19,6 +15,24 @@
                 <li><a href="/gtaa3">GTAA AGG 3</a></li>
                 <li><a href="/dual-momentum">Dual Momentum</a></li>
                 <li><a href="/backtests">Backtests</a></li>
+                <li>
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+                        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </li>
             </ul>
         </nav>
 
@@ -33,94 +47,40 @@
         <strong>Last Updated:</strong> {{formatDate .LastUpdated}}
     </div>
 
-    <div class="summary">
-        <div class="stat">
-            <div class="stat-value">{{.NumPositions}}</div>
-            <div class="stat-label">Active Positions</div>
-        </div>
-        <div class="stat">
-            <div class="stat-value">{{printf "%.0f" (mul .TotalCash 100)}}%</div>
-            <div class="stat-label">Cash Allocation</div>
-        </div>
-        <div class="stat">
-            <div class="stat-value">{{len .Holdings}}</div>
-            <div class="stat-label">Total Holdings</div>
-        </div>
-    </div>
-
-    <h3>Current Holdings</h3>
-    <div class="holdings">
-        {{range .Holdings}}
-        <div class="holding {{if .IsCash}}cash{{end}}">
-            <div class="symbol {{if .IsCash}}cash{{end}}">{{.Symbol}}</div>
-            <div class="details">
-                <div class="name">{{if .Name}}{{.Name}}{{else}}Cash / T-Bills{{end}}</div>
-                {{if not .IsCash}}
-                <div class="info">
-                    Price: ${{printf "%.2f" .Price}}
-                    {{if .MA200}}| MA200: ${{printf "%.2f" .MA200}}{{end}}
-                    {{if .AboveMA}}
-                    <span class="badge above-ma">✓ Above MA200</span>
-                    {{else if .MA200}}
-                    <span class="badge below-ma">✗ Below MA200</span>
-                    {{end}}
-                </div>
-                <div class="info">
-                    {{if .MomentumScore}}
-                    Avg Momentum: {{printf "%.2f" (mul .MomentumScore 100)}}%
-                    {{end}}
-                    {{if .Reason}}| {{.Reason}}{{end}}
-                </div>
-                {{else}}
-                <div class="info">
-                    <span class="badge defensive">🛡️ Defensive Position</span>
-                </div>
-                <div class="info">
-                    {{if .Reason}}{{.Reason}}{{else}}Non-qualifying slots go to cash{{end}}
-                </div>
-                {{end}}
-            </div>
-            <div class="allocation {{if .IsCash}}cash{{end}}">{{printf "%.1f" (mul .Allocation 100)}}%</div>
-        </div>
-        {{end}}
-    </div>
-
     {{if .Backtests}}
-    <div style="margin-top: 3rem;">
+    <div class="backtest-section">
         <h3>📊 Historical Backtest Performance</h3>
         <table class="data-table" style="margin-top: 1rem;">
             <thead>
                 <tr>
                     <th>Variant</th>
                     <th class="text-right">Period</th>
+                    <th class="text-right">Pre-Tax CAGR</th>
                     <th class="text-right">After-Tax CAGR</th>
                     <th class="text-right">Final Value</th>
                     <th class="text-right">Tax Drag</th>
-                    <th class="text-center">Details</th>
                 </tr>
             </thead>
             <tbody>
                 {{range .Backtests}}
                 <tr>
-                    <td><strong>{{.Config.Variant}}</strong></td>
-                    <td class="text-right" style="font-size: 0.9em;">{{printf "%.1f" .Metrics.Years}}y</td>
+                    <td><a href="/backtests/detail?strategy={{.Config.StrategyName}}&variant={{.Config.Variant}}" class="strategy-link"><strong>{{.Config.Variant}}</strong></a></td>
+                    <td class="text-right font-small">{{printf "%.1f" .Metrics.Years}}y</td>
+                    <td class="text-right positive">{{printf "%.2f%%" (mul .Metrics.PreTaxCAGR 100)}}</td>
                     <td class="text-right positive">{{printf "%.2f%%" (mul .Metrics.AfterTaxCAGR 100)}}</td>
                     <td class="text-right">${{printf "%.0f" .Metrics.AfterTaxFinal}}</td>
                     <td class="text-right negative">{{printf "%.2f%%" (mul .Metrics.TaxDrag 100)}}</td>
-                    <td class="text-center">
-                        <a href="/backtests/detail?strategy={{.Config.StrategyName}}&variant={{.Config.Variant}}" style="color: #3498db; text-decoration: none;">View →</a>
-                    </td>
                 </tr>
                 {{end}}
             </tbody>
         </table>
-        <p style="margin-top: 0.5rem; font-size: 0.9em; color: #666;">
-            Backtests use lot-level FIFO accounting with realistic tax rates. <a href="/backtests" style="color: #3498db;">See all strategies →</a>
+        <p class="backtest-note">
+            Backtests use lot-level FIFO accounting with realistic tax rates. <a href="/backtests">See all strategies →</a>
         </p>
     </div>
     {{end}}
 
-    <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+    <div class="strategy-about">
         <h3>About This Strategy</h3>
         <p><strong>3-Slot Rule:</strong> Always maintains 3 equal positions of 33.33% each. If fewer than 3 assets qualify (above MA200), remaining slots go to BIL (cash).</p>
         <p><strong>Selection:</strong> Top 3 assets ranked by average momentum score from universe of 14 ETFs.</p>
@@ -134,5 +94,48 @@
             <p>Portfolio Tracker &copy; 2026</p>
         </footer>
     </div>
+
+    <script>
+        // Theme management
+        (function() {
+            'use strict';
+
+            // Apply theme
+            function applyTheme(theme) {
+                const root = document.documentElement;
+                if (theme === 'dark') {
+                    root.setAttribute('data-theme', 'dark');
+                } else {
+                    root.removeAttribute('data-theme');
+                }
+                localStorage.setItem('theme', theme);
+            }
+
+            // Get current theme
+            function getCurrentTheme() {
+                return document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light';
+            }
+
+            // Initialize theme immediately to prevent flash
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                applyTheme('dark');
+            }
+
+            // Set up toggle button when DOM is ready
+            window.addEventListener('DOMContentLoaded', function() {
+                const toggleButton = document.getElementById('theme-toggle');
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', function() {
+                        const currentTheme = getCurrentTheme();
+                        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                        applyTheme(newTheme);
+                    });
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
