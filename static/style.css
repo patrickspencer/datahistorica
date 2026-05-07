@@ -663,7 +663,7 @@ footer {
 }
 
 :root[data-theme="dark"] .data-table tr.selected {
-    background: #353535;
+    background: #3a3a3a;
 }
 
 .text-left {
