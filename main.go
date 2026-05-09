@@ -254,8 +254,8 @@ func gtaa6Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get v2 backtests only for this strategy
-	backtests, err := getBacktestsForStrategyWithFilter("gtaa6", "v2_")
+	// Get v2 backtests with full analysis (drawdowns & rolling returns)
+	backtests, err := getBacktestsWithAnalysis("gtaa6", "v2_")
 	if err != nil {
 		log.Printf("Error loading backtests: %v", err)
 		// Continue without backtests rather than failing
@@ -263,7 +263,7 @@ func gtaa6Handler(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Strategy
-		Backtests []BacktestSummary
+		Backtests []BacktestWithAnalysis
 		Version   string
 	}{
 		Strategy:  strat,
@@ -314,8 +314,8 @@ func dualMomentumHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get v2 backtests only for this strategy
-	backtests, err := getBacktestsForStrategyWithFilter("dual_momentum", "v2_")
+	// Get v2 backtests with full analysis (drawdowns & rolling returns)
+	backtests, err := getBacktestsWithAnalysis("dual_momentum", "v2_")
 	if err != nil {
 		log.Printf("Error loading backtests: %v", err)
 		// Continue without backtests rather than failing
@@ -323,7 +323,7 @@ func dualMomentumHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Strategy
-		Backtests []BacktestSummary
+		Backtests []BacktestWithAnalysis
 		Version   string
 	}{
 		Strategy:  strat,
@@ -686,6 +686,13 @@ type BacktestSummary struct {
 	Metrics BacktestMetrics
 }
 
+type BacktestWithAnalysis struct {
+	Config         BacktestConfig
+	Metrics        BacktestMetrics
+	Drawdowns      []Drawdown
+	RollingReturns []RollingReturn
+}
+
 type BacktestDetail struct {
 	Config         BacktestConfig
 	Metrics        BacktestMetrics
@@ -824,6 +831,98 @@ func getBacktestsForStrategyWithFilter(strategyName, variantPrefix string) ([]Ba
 	}
 
 	return summaries, nil
+}
+
+func getBacktestsWithAnalysis(strategyName, variantPrefix string) ([]BacktestWithAnalysis, error) {
+	query := `
+		SELECT
+			c.id, c.strategy_name, c.variant, c.universe_etfs,
+			c.start_date, c.end_date, c.initial_capital, c.rebalance_frequency,
+			c.top_n, c.description,
+			m.period_start, m.period_end, m.years,
+			m.pre_tax_cagr, m.after_tax_cagr, m.tax_drag,
+			m.pre_tax_final, m.after_tax_final, m.total_taxes,
+			m.effective_tax_rate, m.max_drawdown, m.num_transactions
+		FROM backtest_configs c
+		JOIN backtest_metrics m ON c.id = m.config_id
+		WHERE c.strategy_name = ? AND c.variant LIKE ?
+		ORDER BY m.after_tax_cagr DESC
+	`
+
+	rows, err := db.Query(query, strategyName, variantPrefix+"%")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var backtests []BacktestWithAnalysis
+	for rows.Next() {
+		var bt BacktestWithAnalysis
+		err := rows.Scan(
+			&bt.Config.ID, &bt.Config.StrategyName, &bt.Config.Variant, &bt.Config.UniverseETFs,
+			&bt.Config.StartDate, &bt.Config.EndDate, &bt.Config.InitialCapital, &bt.Config.RebalanceFrequency,
+			&bt.Config.TopN, &bt.Config.Description,
+			&bt.Metrics.PeriodStart, &bt.Metrics.PeriodEnd, &bt.Metrics.Years,
+			&bt.Metrics.PreTaxCAGR, &bt.Metrics.AfterTaxCAGR, &bt.Metrics.TaxDrag,
+			&bt.Metrics.PreTaxFinal, &bt.Metrics.AfterTaxFinal, &bt.Metrics.TotalTaxes,
+			&bt.Metrics.EffectiveTaxRate, &bt.Metrics.MaxDrawdown, &bt.Metrics.NumTransactions,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Load drawdowns for this backtest
+		drawdownQuery := `
+			SELECT rank, drawdown, peak_date, trough_date, recovery_date, duration_months
+			FROM backtest_drawdowns
+			WHERE config_id = ?
+			ORDER BY rank ASC
+		`
+		ddRows, err := db.Query(drawdownQuery, bt.Config.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		for ddRows.Next() {
+			var dd Drawdown
+			err := ddRows.Scan(&dd.Rank, &dd.Drawdown, &dd.PeakDate, &dd.TroughDate, &dd.RecoveryDate, &dd.DurationMonths)
+			if err != nil {
+				ddRows.Close()
+				return nil, err
+			}
+			bt.Drawdowns = append(bt.Drawdowns, dd)
+		}
+		ddRows.Close()
+
+		// Load rolling returns for this backtest
+		rollingQuery := `
+			SELECT period_years, best_cagr, best_start_date, best_end_date,
+			       worst_cagr, worst_start_date, worst_end_date
+			FROM backtest_rolling_returns
+			WHERE config_id = ?
+			ORDER BY period_years ASC
+		`
+		rrRows, err := db.Query(rollingQuery, bt.Config.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		for rrRows.Next() {
+			var rr RollingReturn
+			err := rrRows.Scan(&rr.PeriodYears, &rr.BestCAGR, &rr.BestStartDate, &rr.BestEndDate,
+				&rr.WorstCAGR, &rr.WorstStartDate, &rr.WorstEndDate)
+			if err != nil {
+				rrRows.Close()
+				return nil, err
+			}
+			bt.RollingReturns = append(bt.RollingReturns, rr)
+		}
+		rrRows.Close()
+
+		backtests = append(backtests, bt)
+	}
+
+	return backtests, nil
 }
 
 func getBacktestDetail(strategyName, variant string) (*BacktestDetail, error) {

@@ -48,36 +48,126 @@
     </div>
 
     {{if .Backtests}}
+    {{range $idx, $bt := .Backtests}}
     <div class="backtest-section">
-        <h3>📊 Historical Backtest Performance</h3>
-        <table class="data-table" style="margin-top: 1rem;">
+        <h3>📊 {{$bt.Config.Variant}} Backtest Analysis</h3>
+        <p style="margin: 0.5rem 0; color: var(--meta-text);">
+            <a href="/backtests/detail?strategy={{$bt.Config.StrategyName}}&variant={{$bt.Config.Variant}}" class="strategy-link">View full details →</a>
+        </p>
+
+        <h4 style="margin-top: 1.5rem;">Performance Summary</h4>
+        <table class="returns-table">
             <thead>
                 <tr>
-                    <th>Variant</th>
-                    <th class="text-right">Period</th>
-                    <th class="text-right">Pre-Tax CAGR</th>
-                    <th class="text-right">After-Tax CAGR</th>
-                    <th class="text-right">Final Value</th>
-                    <th class="text-right">Tax Drag</th>
+                    <th>Metric</th>
+                    <th class="text-right">Value</th>
                 </tr>
             </thead>
             <tbody>
-                {{range .Backtests}}
                 <tr>
-                    <td><a href="/backtests/detail?strategy={{.Config.StrategyName}}&variant={{.Config.Variant}}" class="strategy-link"><strong>{{.Config.Variant}}</strong></a></td>
-                    <td class="text-right font-small">{{printf "%.1f" .Metrics.Years}}y</td>
-                    <td class="text-right positive">{{printf "%.2f%%" (mul .Metrics.PreTaxCAGR 100)}}</td>
-                    <td class="text-right positive">{{printf "%.2f%%" (mul .Metrics.AfterTaxCAGR 100)}}</td>
-                    <td class="text-right">${{printf "%.0f" .Metrics.AfterTaxFinal}}</td>
-                    <td class="text-right negative">{{printf "%.2f%%" (mul .Metrics.TaxDrag 100)}}</td>
+                    <td>Period</td>
+                    <td class="text-right">{{$bt.Config.StartDate}} to {{$bt.Config.EndDate}} ({{printf "%.1f" $bt.Metrics.Years}} years)</td>
+                </tr>
+                <tr>
+                    <td>After-Tax CAGR</td>
+                    <td class="text-right positive"><strong>{{printf "%.2f%%" (mul $bt.Metrics.AfterTaxCAGR 100)}}</strong></td>
+                </tr>
+                <tr>
+                    <td>Pre-Tax CAGR</td>
+                    <td class="text-right positive">{{printf "%.2f%%" (mul $bt.Metrics.PreTaxCAGR 100)}}</td>
+                </tr>
+                <tr>
+                    <td>Tax Drag</td>
+                    <td class="text-right negative">{{printf "%.2f%%" (mul $bt.Metrics.TaxDrag 100)}}</td>
+                </tr>
+                <tr>
+                    <td>Final Value (After-Tax)</td>
+                    <td class="text-right">${{printf "%.0f" $bt.Metrics.AfterTaxFinal}}</td>
+                </tr>
+                <tr>
+                    <td>Total Taxes Paid</td>
+                    <td class="text-right">${{printf "%.0f" $bt.Metrics.TotalTaxes}}</td>
+                </tr>
+                {{if $bt.Metrics.MaxDrawdown.Valid}}
+                <tr>
+                    <td>Maximum Drawdown</td>
+                    <td class="text-right negative">{{printf "%.2f%%" (mul $bt.Metrics.MaxDrawdown.Float64 100)}}</td>
                 </tr>
                 {{end}}
             </tbody>
         </table>
+
+        {{if $bt.Drawdowns}}
+        <h4 style="margin-top: 2rem;">Drawdown Analysis</h4>
+        <table class="returns-table">
+            <thead>
+                <tr>
+                    <th class="text-center">Rank</th>
+                    <th class="text-right">Drawdown</th>
+                    <th class="text-center">Peak Date</th>
+                    <th class="text-center">Trough Date</th>
+                    <th class="text-center">Recovery Date</th>
+                    <th class="text-right">Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range $bt.Drawdowns}}
+                <tr>
+                    <td class="text-center">{{.Rank}}</td>
+                    <td class="text-right negative"><strong>{{printf "%.2f%%" (mul .Drawdown 100)}}</strong></td>
+                    <td class="text-center">{{formatMonthYear .PeakDate}}</td>
+                    <td class="text-center">{{formatMonthYear .TroughDate}}</td>
+                    <td class="text-center">
+                        {{if .RecoveryDate.Valid}}
+                            {{formatMonthYear .RecoveryDate.String}}
+                        {{else}}
+                            <span class="neutral">Not recovered</span>
+                        {{end}}
+                    </td>
+                    <td class="text-right">
+                        {{if .DurationMonths.Valid}}
+                            {{.DurationMonths.Int64}} mo
+                        {{else}}
+                            <span class="neutral">Ongoing</span>
+                        {{end}}
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{end}}
+
+        {{if $bt.RollingReturns}}
+        <h4 style="margin-top: 2rem;">Rolling Period Analysis</h4>
+        <table class="returns-table">
+            <thead>
+                <tr>
+                    <th class="text-center">Period</th>
+                    <th class="text-right">Best CAGR</th>
+                    <th class="text-center">Best Period</th>
+                    <th class="text-right">Worst CAGR</th>
+                    <th class="text-center">Worst Period</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range $bt.RollingReturns}}
+                <tr>
+                    <td class="text-center"><strong>{{.PeriodYears}}-Year</strong></td>
+                    <td class="text-right positive"><strong>{{printf "%.2f%%" (mul .BestCAGR 100)}}</strong></td>
+                    <td class="text-center">{{formatDate .BestStartDate}} to {{formatDate .BestEndDate}}</td>
+                    <td class="text-right negative"><strong>{{printf "%.2f%%" (mul .WorstCAGR 100)}}</strong></td>
+                    <td class="text-center">{{formatDate .WorstStartDate}} to {{formatDate .WorstEndDate}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{end}}
+
         <p class="backtest-note">
-            Backtests use lot-level FIFO accounting with realistic tax rates. <a href="/backtests">See all strategies →</a>
+            Backtests use lot-level FIFO accounting with realistic tax rates (23.8% LT, 40.8% ST).
         </p>
     </div>
+    {{end}}
     {{end}}
 
     <div class="strategy-about">
