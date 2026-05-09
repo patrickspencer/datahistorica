@@ -134,6 +134,7 @@ type AssetData struct {
 	URL         string
 	Price       float64
 	MA200       float64
+	MA215       float64
 	AboveMA     bool
 	ROC1M       float64
 	ROC3M       float64
@@ -253,8 +254,8 @@ func gtaa6Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get backtests for this strategy
-	backtests, err := getBacktestsForStrategy("gtaa6")
+	// Get v2 backtests only for this strategy
+	backtests, err := getBacktestsForStrategyWithFilter("gtaa6", "v2_")
 	if err != nil {
 		log.Printf("Error loading backtests: %v", err)
 		// Continue without backtests rather than failing
@@ -313,8 +314,8 @@ func dualMomentumHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get backtests for this strategy
-	backtests, err := getBacktestsForStrategy("dual_momentum")
+	// Get v2 backtests only for this strategy
+	backtests, err := getBacktestsForStrategyWithFilter("dual_momentum", "v2_")
 	if err != nil {
 		log.Printf("Error loading backtests: %v", err)
 		// Continue without backtests rather than failing
@@ -357,6 +358,7 @@ func getGTAAAssets() ([]AssetData, string, error) {
 			t.symbol,
 			p.adj_close,
 			COALESCE(i.ma_200, 0) as ma_200,
+			COALESCE(i.ma_215, 0) as ma_215,
 			COALESCE(i.roc_1m, 0) as roc_1m,
 			COALESCE(i.roc_3m, 0) as roc_3m,
 			COALESCE(i.roc_6m, 0) as roc_6m,
@@ -386,7 +388,7 @@ func getGTAAAssets() ([]AssetData, string, error) {
 	for rows.Next() {
 		var asset AssetData
 
-		err := rows.Scan(&asset.Symbol, &asset.Price, &asset.MA200, &asset.ROC1M, &asset.ROC3M, &asset.ROC6M, &asset.ROC12M, &asset.AvgROC)
+		err := rows.Scan(&asset.Symbol, &asset.Price, &asset.MA200, &asset.MA215, &asset.ROC1M, &asset.ROC3M, &asset.ROC6M, &asset.ROC12M, &asset.AvgROC)
 		if err != nil {
 			log.Printf("Error scanning asset %s: %v", asset.Symbol, err)
 			continue
@@ -636,7 +638,7 @@ type BacktestMetrics struct {
 	MaxDDTroughDate     sql.NullString
 	MaxDDRecoveryDate   sql.NullString
 	MaxDDDurationMonths sql.NullInt64
-	NumTransactions     int
+	NumTransactions     sql.NullInt64
 }
 
 type MonthlyReturn struct {
@@ -647,8 +649,8 @@ type MonthlyReturn struct {
 	AfterTaxReturn    sql.NullFloat64
 	TaxPaidCumulative float64
 	CashWeight        float64
-	Holdings          string
-	NumHoldings       int
+	Holdings          sql.NullString
+	NumHoldings       sql.NullInt64
 }
 
 type AnnualReturn struct {
@@ -781,6 +783,49 @@ func getBacktestsForStrategy(strategyName string) ([]BacktestSummary, error) {
 	return summaries, nil
 }
 
+func getBacktestsForStrategyWithFilter(strategyName, variantPrefix string) ([]BacktestSummary, error) {
+	query := `
+		SELECT
+			c.id, c.strategy_name, c.variant, c.universe_etfs,
+			c.start_date, c.end_date, c.initial_capital, c.rebalance_frequency,
+			c.top_n, c.description,
+			m.period_start, m.period_end, m.years,
+			m.pre_tax_cagr, m.after_tax_cagr, m.tax_drag,
+			m.pre_tax_final, m.after_tax_final, m.total_taxes,
+			m.effective_tax_rate, m.max_drawdown, m.num_transactions
+		FROM backtest_configs c
+		JOIN backtest_metrics m ON c.id = m.config_id
+		WHERE c.strategy_name = ? AND c.variant LIKE ?
+		ORDER BY m.after_tax_cagr DESC
+	`
+
+	rows, err := db.Query(query, strategyName, variantPrefix+"%")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var summaries []BacktestSummary
+	for rows.Next() {
+		var s BacktestSummary
+		err := rows.Scan(
+			&s.Config.ID, &s.Config.StrategyName, &s.Config.Variant, &s.Config.UniverseETFs,
+			&s.Config.StartDate, &s.Config.EndDate, &s.Config.InitialCapital, &s.Config.RebalanceFrequency,
+			&s.Config.TopN, &s.Config.Description,
+			&s.Metrics.PeriodStart, &s.Metrics.PeriodEnd, &s.Metrics.Years,
+			&s.Metrics.PreTaxCAGR, &s.Metrics.AfterTaxCAGR, &s.Metrics.TaxDrag,
+			&s.Metrics.PreTaxFinal, &s.Metrics.AfterTaxFinal, &s.Metrics.TotalTaxes,
+			&s.Metrics.EffectiveTaxRate, &s.Metrics.MaxDrawdown, &s.Metrics.NumTransactions,
+		)
+		if err != nil {
+			return nil, err
+		}
+		summaries = append(summaries, s)
+	}
+
+	return summaries, nil
+}
+
 func getBacktestDetail(strategyName, variant string) (*BacktestDetail, error) {
 	// Get config and metrics
 	query := `
@@ -843,7 +888,7 @@ func getBacktestDetail(strategyName, variant string) (*BacktestDetail, error) {
 		       tax_paid_cumulative, cash_weight, holdings, num_holdings
 		FROM backtest_monthly_returns
 		WHERE config_id = ?
-		ORDER BY date ASC
+		ORDER BY date DESC
 	`
 	rows, err = db.Query(monthlyQuery, detail.Config.ID)
 	if err != nil {
