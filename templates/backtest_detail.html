@@ -70,50 +70,60 @@
                 <div class="info">{{printf "%.1f" .Metrics.Years}} years of data</div>
             </div>
 
-            <div class="metrics-grid">
-                <div class="metric-card highlight">
-                    <div class="label">After-Tax CAGR</div>
-                    <div class="value positive">{{printf "%.2f%%" (mul .Metrics.AfterTaxCAGR 100)}}</div>
-                    <div class="subvalue">Pre-Tax: {{printf "%.2f%%" (mul .Metrics.PreTaxCAGR 100)}}</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="label">Final Value</div>
-                    <div class="value">${{printf "%.0f" .Metrics.AfterTaxFinal}}</div>
-                    <div class="subvalue">From $10,000</div>
-                </div>
-
-                <div class="metric-card warning">
-                    <div class="label">Tax Drag</div>
-                    <div class="value negative">{{printf "%.2f%%" (mul .Metrics.TaxDrag 100)}}</div>
-                    <div class="subvalue">Total Taxes: ${{printf "%.0f" .Metrics.TotalTaxes}}</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="label">Effective Tax Rate</div>
-                    <div class="value">{{printf "%.1f%%" (mul .Metrics.EffectiveTaxRate 100)}}</div>
-                    <div class="subvalue">On gains</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="label">Total Transactions</div>
+            <table class="returns-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th class="text-right">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Period</td>
+                        <td class="text-right">{{.Config.StartDate}} to {{.Config.EndDate}} ({{printf "%.1f" .Metrics.Years}} years)</td>
+                    </tr>
+                    <tr>
+                        <td>After-Tax CAGR</td>
+                        <td class="text-right positive"><strong>{{printf "%.2f%%" (mul .Metrics.AfterTaxCAGR 100)}}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Pre-Tax CAGR</td>
+                        <td class="text-right positive">{{printf "%.2f%%" (mul .Metrics.PreTaxCAGR 100)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Tax Drag</td>
+                        <td class="text-right negative">{{printf "%.2f%%" (mul .Metrics.TaxDrag 100)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Final Value (After-Tax)</td>
+                        <td class="text-right">${{printf "%.0f" .Metrics.AfterTaxFinal}} (from ${{printf "%.0f" .Config.InitialCapital}})</td>
+                    </tr>
+                    <tr>
+                        <td>Final Value (Pre-Tax)</td>
+                        <td class="text-right">${{printf "%.0f" .Metrics.PreTaxFinal}}</td>
+                    </tr>
+                    <tr>
+                        <td>Total Taxes Paid</td>
+                        <td class="text-right">${{printf "%.0f" .Metrics.TotalTaxes}}</td>
+                    </tr>
+                    <tr>
+                        <td>Effective Tax Rate</td>
+                        <td class="text-right">{{printf "%.1f%%" (mul .Metrics.EffectiveTaxRate 100)}} on gains</td>
+                    </tr>
                     {{if .Metrics.NumTransactions.Valid}}
-                    <div class="value">{{.Metrics.NumTransactions.Int64}}</div>
-                    <div class="subvalue">{{printf "%.0f" (divf (float64 .Metrics.NumTransactions.Int64) .Metrics.Years)}} per year</div>
-                    {{else}}
-                    <div class="value">-</div>
-                    <div class="subvalue">Not available</div>
+                    <tr>
+                        <td>Total Transactions</td>
+                        <td class="text-right">{{.Metrics.NumTransactions.Int64}} ({{printf "%.0f" (divf (float64 .Metrics.NumTransactions.Int64) .Metrics.Years)}} per year)</td>
+                    </tr>
                     {{end}}
-                </div>
-
-                {{if .Metrics.MaxDrawdown.Valid}}
-                <div class="metric-card warning">
-                    <div class="label">Max Drawdown</div>
-                    <div class="value negative">{{printf "%.1f%%" (mul .Metrics.MaxDrawdown.Float64 100)}}</div>
-                    <div class="subvalue">Worst decline</div>
-                </div>
-                {{end}}
-            </div>
+                    {{if .Metrics.MaxDrawdown.Valid}}
+                    <tr>
+                        <td>Maximum Drawdown</td>
+                        <td class="text-right negative">{{printf "%.2f%%" (mul .Metrics.MaxDrawdown.Float64 100)}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
 
             {{if .Drawdowns}}
             <div class="section-header">
