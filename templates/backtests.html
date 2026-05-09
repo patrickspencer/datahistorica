@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Backtest Results - Strategy Tracker</title>
-    <link rel="stylesheet" href="/static/style.css?v=20260508-1">
+    <link rel="stylesheet" href="/static/style.css?v=20260509-1">
 </head>
 <body>
     <div class="container">
@@ -62,7 +62,7 @@
                         <td class="text-right positive">{{printf "%.2f%%" (mul $summary.Metrics.AfterTaxCAGR 100)}}</td>
                         <td class="text-right negative">{{printf "%.2f%%" (mul $summary.Metrics.TaxDrag 100)}}</td>
                         <td class="text-right">${{printf "%.0f" $summary.Metrics.PreTaxFinal}}</td>
-                        <td class="text-right">{{$summary.Metrics.NumTransactions}}</td>
+                        <td class="text-right">{{if $summary.Metrics.NumTransactions.Valid}}{{$summary.Metrics.NumTransactions.Int64}}{{else}}-{{end}}</td>
                         <td class="text-center">
                             <a href="/backtests/detail?strategy={{$summary.Config.StrategyName}}&variant={{$summary.Config.Variant}}" class="strategy-link">
                                 View →

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Historica</title>
-    <link rel="stylesheet" href="/static/style.css?v=20260508-1">
+    <link rel="stylesheet" href="/static/style.css?v=20260509-1">
 </head>
 <body>
     <div class="container">
@@ -51,8 +51,17 @@
                         <input type="number" id="numHoldings" placeholder="6" value="6" min="1" max="14" class="calculator-input" style="width: 80px;">
                     </div>
                     <div class="filter-group">
+                        <label for="maToggle">
+                            MA Type: <span id="maTypeLabel">200D MA</span>
+                        </label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="maToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="filter-group">
                         <label for="filterAboveMA">
-                            Show only assets above 200-day MA
+                            Show only assets above <span id="filterMALabel">MA</span>
                         </label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="filterAboveMA">
@@ -64,10 +73,10 @@
                 <table class="data-table">
                     <colgroup>
                         <col style="width: 5%;">
-                        <col style="width: 17%;">
+                        <col style="width: 16%;">
                         <col style="width: 6%;">
                         <col style="width: 7%;">
-                        <col style="width: 7%;">
+                        <col style="width: 9%;">
                         <col style="width: 9%;">
                         <col style="width: 8%;">
                         <col style="width: 7%;">
@@ -82,7 +91,7 @@
                             <th class="text-left">Asset Class</th>
                             <th class="text-left">Ticker</th>
                             <th class="text-left">Price</th>
-                            <th class="text-left">MA200</th>
+                            <th class="text-left"><span id="maHeaderLabel">200D MA</span></th>
                             <th class="text-left">Above MA?</th>
                             <th class="text-left">Avg ROC</th>
                             <th class="text-left">1M ROC</th>
@@ -94,12 +103,12 @@
                     </thead>
                     <tbody>
                         {{range .GTAAAssets}}
-                        <tr {{if .IsSelected6}}class="selected"{{end}} data-above-ma="{{.AboveMA}}" data-is-selected="{{.IsSelected6}}">
+                        <tr {{if .IsSelected6}}class="selected"{{end}} data-above-ma="{{.AboveMA}}" data-is-selected="{{.IsSelected6}}" data-ma200="{{printf "%.2f" .MA200}}" data-ma215="{{printf "%.2f" .MA215}}">
                             <td class="text-left">{{.Rank}}</td>
                             <td class="text-left">{{.Description}}</td>
                             <td class="text-left"><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Symbol}}</a></td>
                             <td class="text-left">${{printf "%.2f" .Price}}</td>
-                            <td class="text-left">${{printf "%.2f" .MA200}}</td>
+                            <td class="text-left ma-value">${{printf "%.2f" .MA200}}</td>
                             <td class="text-left">{{if .AboveMA}}✓{{else}}✗{{end}}</td>
                             <td class="text-left {{if gt .AvgROC 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .AvgROC 100.0)}}%</td>
                             <td class="text-left {{if gt .ROC1M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC1M 100.0)}}%</td>
@@ -115,7 +124,7 @@
                 <div class="meta">
                     <strong>Signal Date:</strong> {{formatDate .SignalDate}}<br>
                     <strong>Strategy:</strong> Global Tactical Asset Allocation<br>
-                    <strong>Selection Criteria:</strong> Top assets by average momentum (1M, 3M, 6M, 12M ROC) above 200-day MA
+                    <strong>Selection Criteria:</strong> Top assets by average momentum (1M, 3M, 6M, 12M ROC) above <span id="metaMALabel">200D MA</span>
                 </div>
 
                 <p class="gtaa-note note-text"></p>
@@ -332,6 +341,37 @@
         // Add event listeners
         document.getElementById('investmentAmount').addEventListener('input', updateInvestmentAmounts);
         document.getElementById('numHoldings').addEventListener('input', updateInvestmentAmounts);
+
+        // MA toggle functionality
+        document.getElementById('maToggle').addEventListener('change', function() {
+            const use10Month = this.checked;
+            const rows = document.querySelectorAll('.data-table tbody tr[data-ma200]');
+
+            // Update all MA values in table
+            rows.forEach(row => {
+                const maCell = row.querySelector('.ma-value');
+                if (use10Month) {
+                    maCell.textContent = '$' + row.getAttribute('data-ma215');
+                } else {
+                    maCell.textContent = '$' + row.getAttribute('data-ma200');
+                }
+            });
+
+            // Update labels
+            const maTypeLabel = document.getElementById('maTypeLabel');
+            const maHeaderLabel = document.getElementById('maHeaderLabel');
+            const metaMALabel = document.getElementById('metaMALabel');
+
+            if (use10Month) {
+                maTypeLabel.textContent = '10M MA';
+                maHeaderLabel.textContent = '10M MA';
+                metaMALabel.textContent = '10M MA';
+            } else {
+                maTypeLabel.textContent = '200D MA';
+                maHeaderLabel.textContent = '200D MA';
+                metaMALabel.textContent = '200D MA';
+            }
+        });
     </script>
 </body>
 </html>

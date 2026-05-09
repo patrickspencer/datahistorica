@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Config.StrategyName}} - {{.Config.Variant}} - Strategy Tracker</title>
-    <link rel="stylesheet" href="/static/style.css?v=20260508-1">
+    <link rel="stylesheet" href="/static/style.css?v=20260509-1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -97,8 +97,13 @@
 
                 <div class="metric-card">
                     <div class="label">Total Transactions</div>
-                    <div class="value">{{.Metrics.NumTransactions}}</div>
-                    <div class="subvalue">{{printf "%.0f" (divf (float64 .Metrics.NumTransactions) .Metrics.Years)}} per year</div>
+                    {{if .Metrics.NumTransactions.Valid}}
+                    <div class="value">{{.Metrics.NumTransactions.Int64}}</div>
+                    <div class="subvalue">{{printf "%.0f" (divf (float64 .Metrics.NumTransactions.Int64) .Metrics.Years)}} per year</div>
+                    {{else}}
+                    <div class="value">-</div>
+                    <div class="subvalue">Not available</div>
+                    {{end}}
                 </div>
 
                 {{if .Metrics.MaxDrawdown.Valid}}
@@ -197,7 +202,7 @@
                 <tbody>
                     {{range .AnnualReturns}}
                     <tr>
-                        <td class="text-center"><span class="year-badge">{{.Year}}</span></td>
+                        <td class="text-center">{{.Year}}</td>
                         <td class="text-right {{if gt .PreTaxReturn 0.0}}positive{{else if lt .PreTaxReturn 0.0}}negative{{else}}neutral{{end}}">
                             {{printf "%.2f%%" (mul .PreTaxReturn 100)}}
                         </td>
@@ -243,8 +248,8 @@
                                 {{if .AfterTaxReturn.Valid}}{{printf "%.2f%%" (mul .AfterTaxReturn.Float64 100)}}{{else}}-{{end}}
                             </td>
                             <td class="text-center" style="font-size: 0.85em;">
-                                {{if .Holdings}}
-                                    {{.Holdings}}
+                                {{if .Holdings.Valid}}
+                                    {{.Holdings.String}}
                                 {{else}}
                                     <span class="neutral">-</span>
                                 {{end}}
@@ -328,10 +333,13 @@
                 {{end}}
             ];
 
+            // Reverse data for chronological order (oldest to newest for chart)
+            const reversedData = monthlyData.reverse();
+
             // Prepare data for Chart.js
-            const labels = monthlyData.map(d => d.date);
-            const afterTaxValues = monthlyData.map(d => d.afterTaxValue);
-            const preTaxValues = monthlyData.map(d => d.preTaxValue);
+            const labels = reversedData.map(d => d.date);
+            const afterTaxValues = reversedData.map(d => d.afterTaxValue);
+            const preTaxValues = reversedData.map(d => d.preTaxValue);
 
             // Get the canvas context
             const ctx = document.getElementById('portfolioChart').getContext('2d');

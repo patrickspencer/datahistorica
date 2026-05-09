@@ -984,32 +984,48 @@ h2 {
         grid-template-columns: 1fr 1fr;
     }
 
-    /* Responsive tables */
-    .data-table {
-        font-size: 0.85rem;
-        display: block;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+    /* Stack filter controls vertically on mobile */
+    .filter-controls {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
     }
 
-    .data-table thead,
-    .data-table tbody,
-    .data-table tr {
-        display: table;
+    .filter-group {
         width: 100%;
-        table-layout: fixed;
+    }
+
+    /* Responsive tables - make horizontally scrollable */
+    .data-table {
+        font-size: 0.85rem;
+        min-width: 100%;
+        white-space: nowrap;
     }
 
     .data-table th,
     .data-table td {
         padding: 8px 6px;
-        white-space: nowrap;
     }
 
-    /* Reduce column widths on mobile */
-    .data-table th:first-child,
-    .data-table td:first-child {
-        width: 80px;
+    /* Wrapper for horizontal scroll */
+    .card {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Make other table types scrollable too */
+    .returns-table,
+    .backtest-table {
+        font-size: 0.85rem;
+        min-width: 100%;
+    }
+
+    .returns-table th,
+    .returns-table td,
+    .backtest-table th,
+    .backtest-table td {
+        padding: 8px 6px;
+        white-space: nowrap;
     }
 }
 
@@ -1031,18 +1047,19 @@ h2 {
     }
 
     /* Extra compact tables for small screens */
-    .data-table {
+    .data-table,
+    .returns-table,
+    .backtest-table {
         font-size: 0.75rem;
     }
 
     .data-table th,
-    .data-table td {
+    .data-table td,
+    .returns-table th,
+    .returns-table td,
+    .backtest-table th,
+    .backtest-table td {
         padding: 6px 4px;
-    }
-
-    .data-table th:first-child,
-    .data-table td:first-child {
-        width: 70px;
     }
 }
 
