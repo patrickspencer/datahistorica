@@ -135,7 +135,7 @@
                 <tbody>
                     {{range .Drawdowns}}
                     <tr>
-                        <td class="text-center"><span class="year-badge">{{.Rank}}</span></td>
+                        <td class="text-center">{{.Rank}}</td>
                         <td class="text-right negative"><strong>{{printf "%.2f%%" (mul .Drawdown 100)}}</strong></td>
                         <td class="text-center">{{formatMonthYear .PeakDate}}</td>
                         <td class="text-center">{{formatMonthYear .TroughDate}}</td>
@@ -172,7 +172,7 @@
                 <tbody>
                     {{range .RollingReturns}}
                     <tr>
-                        <td class="text-center"><span class="year-badge">{{.PeriodYears}}-Year</span></td>
+                        <td class="text-center"><strong>{{.PeriodYears}}-Year</strong></td>
                         <td class="text-right positive"><strong>{{printf "%.2f%%" (mul .BestCAGR 100)}}</strong></td>
                         <td class="text-center">{{formatDate .BestStartDate}} to {{formatDate .BestEndDate}}</td>
                         <td class="text-right negative"><strong>{{printf "%.2f%%" (mul .WorstCAGR 100)}}</strong></td>
