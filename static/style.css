@@ -684,11 +684,13 @@ footer {
     color: white;
     padding: 8px 10px;
     font-weight: 600;
+    text-align: left;
 }
 
 .data-table td {
     padding: 6px 10px;
     border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
 }
 
 .data-table a {
