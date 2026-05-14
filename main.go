@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -60,6 +61,19 @@ func main() {
 			}
 			return dateStr
 		},
+		"formatDateLong": func(dateStr string) string {
+			// Parse YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ and return "January 2, 2006"
+			s := dateStr
+			if len(s) > 10 {
+				s = s[:10]
+			}
+			t, err := time.Parse("2006-01-02", s)
+			if err != nil {
+				return dateStr
+			}
+			// Format: "May 8, 2026" (no leading zero on day)
+			return t.Format("January 2, 2006")
+		},
 		"formatMonthYear": func(dateStr string) string {
 			// Parse ISO datetime string and format as "Jan, 2024"
 			t, err := time.Parse("2006-01-02T15:04:05Z", dateStr)
@@ -85,6 +99,9 @@ func main() {
 	http.HandleFunc("/gtaa6", gtaa6Handler)
 	http.HandleFunc("/gtaa3", gtaa3Handler)
 	http.HandleFunc("/dual-momentum", dualMomentumHandler)
+
+	// ETF detail pages
+	http.HandleFunc("/etf/", etfHandler)
 
 	// Backtest routes
 	http.HandleFunc("/backtests", backtestsIndexHandler)
@@ -148,6 +165,7 @@ type AssetData struct {
 
 // Asset descriptions
 var assetDescriptions = map[string]string{
+	"SPMO": "US Large Cap Momen.",
 	"MTUM": "US Momentum Factor",
 	"VBK":  "US Small Cap Growth",
 	"VBR":  "US Small Cap Value",
@@ -155,6 +173,7 @@ var assetDescriptions = map[string]string{
 	"VEA":  "Developed Markets",
 	"VWO":  "Emerging Markets",
 	"VNQ":  "US Real Estate",
+	"QQQM": "US Tech (Nasdaq)",
 	"QQQ":  "US Tech (Nasdaq)",
 	"GSG":  "Commodities",
 	"IAU":  "Gold",
@@ -162,10 +181,14 @@ var assetDescriptions = map[string]string{
 	"VGIT": "Gov Bonds (Int)",
 	"VGLT": "Gov Bonds (Long)",
 	"IGOV": "Intl Gov Bonds",
+	"VOO":  "US Total Market",
+	"VEU":  "International Equity",
+	"BIL":  "Short-Term T-Bills (Cash)",
 }
 
 // Asset URLs - links to fund provider pages
 var assetURLs = map[string]string{
+	"SPMO": "https://www.invesco.com/us/financial-products/etfs/product-detail?productId=SPMO",
 	"MTUM": "https://www.ishares.com/us/products/251614/ishares-msci-usa-momentum-factor-etf",
 	"VBK":  "https://investor.vanguard.com/investment-products/etfs/profile/vbk",
 	"VBR":  "https://investor.vanguard.com/investment-products/etfs/profile/vbr",
@@ -173,6 +196,7 @@ var assetURLs = map[string]string{
 	"VEA":  "https://investor.vanguard.com/investment-products/etfs/profile/vea",
 	"VWO":  "https://investor.vanguard.com/investment-products/etfs/profile/vwo",
 	"VNQ":  "https://investor.vanguard.com/investment-products/etfs/profile/vnq",
+	"QQQM": "https://www.invesco.com/us/financial-products/etfs/product-detail?productId=QQQM",
 	"QQQ":  "https://www.invesco.com/us/financial-products/etfs/product-detail?productId=QQQ",
 	"GSG":  "https://www.ishares.com/us/products/239757/ishares-sp-gsci-commodityindexed-trust-fund",
 	"IAU":  "https://www.ishares.com/us/products/239561/ishares-gold-trust-fund",
@@ -183,6 +207,29 @@ var assetURLs = map[string]string{
 	"VOO":  "https://investor.vanguard.com/investment-products/etfs/profile/voo",
 	"VEU":  "https://investor.vanguard.com/investment-products/etfs/profile/veu",
 	"BIL":  "https://www.ssga.com/us/en/individual/etfs/funds/spdr-bloomberg-1-3-month-t-bill-etf-bil",
+}
+
+// Asset expense ratios
+var assetExpenseRatios = map[string]string{
+	"SPMO": "0.13%",
+	"MTUM": "0.15%",
+	"VBK":  "0.07%",
+	"VBR":  "0.07%",
+	"VTV":  "0.04%",
+	"VEA":  "0.05%",
+	"VWO":  "0.08%",
+	"VNQ":  "0.13%",
+	"QQQM": "0.15%",
+	"QQQ":  "0.20%",
+	"GSG":  "0.75%",
+	"IAU":  "0.25%",
+	"VCIT": "0.04%",
+	"VGIT": "0.04%",
+	"VGLT": "0.04%",
+	"IGOV": "0.35%",
+	"BIL":  "0.14%",
+	"VOO":  "0.03%",
+	"VEU":  "0.07%",
 }
 
 type DualMomentumData struct {
@@ -203,10 +250,29 @@ type DualMomentumData struct {
 }
 
 type HomePage struct {
-	GTAAAssets       []AssetData
-	DualMomentum     DualMomentumData
-	SignalDate       string
-	Version          string
+	GTAAAssets   []AssetData
+	DualMomentum DualMomentumData
+	SignalDate   string
+	Version      string
+}
+
+type ETFPriceRow struct {
+	Date  string
+	Price float64
+}
+
+type ETFPage struct {
+	Symbol       string
+	Description  string
+	ExternalURL  string
+	ExpenseRatio string
+	CurrentPrice float64
+	MA200        float64
+	MA215        float64
+	AboveMA200   bool
+	AboveMA215   bool
+	Prices       []ETFPriceRow
+	Version      string
 }
 
 // Handlers
@@ -332,6 +398,83 @@ func dualMomentumHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := templates.ExecuteTemplate(w, "dual_momentum.html", data); err != nil{
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Template error: %v", err)
+	}
+}
+
+func etfHandler(w http.ResponseWriter, r *http.Request) {
+	symbol := strings.ToUpper(strings.TrimSpace(strings.TrimPrefix(r.URL.Path, "/etf/")))
+	if symbol == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	var tickerID int
+	if err := db.QueryRow("SELECT id FROM tickers WHERE symbol = ?", symbol).Scan(&tickerID); err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	var currentPrice, ma200, ma215 float64
+	db.QueryRow(`
+		SELECT p.adj_close, COALESCE(i.ma_200, 0), COALESCE(i.ma_215, 0)
+		FROM prices p
+		LEFT JOIN indicators i ON p.ticker_id = i.ticker_id AND p.date = i.date
+		WHERE p.ticker_id = ?
+		ORDER BY p.date DESC
+		LIMIT 1
+	`, tickerID).Scan(&currentPrice, &ma200, &ma215)
+
+	rows, err := db.Query(`
+		SELECT date, adj_close FROM prices
+		WHERE ticker_id = ?
+		ORDER BY date DESC
+		LIMIT 250
+	`, tickerID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var prices []ETFPriceRow
+	for rows.Next() {
+		var row ETFPriceRow
+		if err := rows.Scan(&row.Date, &row.Price); err != nil {
+			continue
+		}
+		prices = append(prices, row)
+	}
+
+	description := assetDescriptions[symbol]
+	if description == "" {
+		description = symbol
+	}
+	expenseRatio := assetExpenseRatios[symbol]
+	if expenseRatio == "" {
+		expenseRatio = "N/A"
+	}
+	externalURL := assetURLs[symbol]
+	if externalURL == "" {
+		externalURL = "https://finance.yahoo.com/quote/" + symbol
+	}
+
+	page := ETFPage{
+		Symbol:       symbol,
+		Description:  description,
+		ExternalURL:  externalURL,
+		ExpenseRatio: expenseRatio,
+		CurrentPrice: currentPrice,
+		MA200:        ma200,
+		MA215:        ma215,
+		AboveMA200:   ma200 > 0 && currentPrice > ma200,
+		AboveMA215:   ma215 > 0 && currentPrice > ma215,
+		Prices:       prices,
+		Version:      Version,
+	}
+
+	if err := templates.ExecuteTemplate(w, "etf.html", page); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Printf("Template error: %v", err)
 	}

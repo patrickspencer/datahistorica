@@ -60,6 +60,10 @@ def fetch_prices(config):
             all_tickers.add(strategy_config['intl_ticker'])
             all_tickers.add(strategy_config['cash_ticker'])
 
+    # Also fetch extra tracked tickers (not in any strategy universe)
+    for symbol in config.get('extra_tickers', []):
+        all_tickers.add(symbol)
+
     print(f"Fetching prices for {len(all_tickers)} tickers...")
 
     # Fetch historical data as far back as possible (2000 or ETF inception)
@@ -126,8 +130,9 @@ def calculate_indicators(config):
         df = df.set_index('date')
         df = df.sort_index()
 
-        # Calculate MA200
+        # Calculate both 200-day MA and 10-month SMA (215-day)
         df['ma_200'] = df['close'].rolling(window=200).mean()
+        df['ma_215'] = df['close'].rolling(window=215).mean()  # 10-month SMA
 
         # Calculate ROC at monthly intervals (approximate)
         df_monthly = df.resample('ME').last()
@@ -153,13 +158,14 @@ def calculate_indicators(config):
                 cursor.execute(
                     """
                     INSERT OR REPLACE INTO indicators
-                    (ticker_id, date, ma_200, roc_1m, roc_3m, roc_6m, roc_12m, avg_roc)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (ticker_id, date, ma_200, ma_215, roc_1m, roc_3m, roc_6m, roc_12m, avg_roc)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         ticker_id,
                         date.strftime('%Y-%m-%d'),
                         row['ma_200'],
+                        row.get('ma_215'),
                         row.get('roc_1m'),
                         row.get('roc_3m'),
                         row.get('roc_6m'),
@@ -441,6 +447,98 @@ def generate_dual_momentum_signals(conn, strategy_config, signal_date):
     print("✅ dual_momentum complete\n")
 
 
+def fill_price_gaps(config):
+    """Detect and backfill missing prices.
+
+    For each ticker, compares the set of weekdays within the known date range
+    against what's actually stored. Gaps larger than 4 consecutive missing
+    weekdays (too long to be a holiday) are re-fetched from Tiingo. We also
+    always re-fetch from each ticker's last stored date to today.
+    """
+    print("=" * 60)
+    print("CHECKING FOR PRICE GAPS")
+    print("=" * 60)
+
+    conn = get_db_connection(config['database']['path'])
+    client = TiingoClient(config['tiingo']['api_key'])
+    cursor = conn.cursor()
+
+    today = datetime.now().date()
+    total_filled = 0
+
+    cursor.execute("SELECT id, symbol FROM tickers ORDER BY symbol")
+    tickers = cursor.fetchall()
+
+    for ticker_id, symbol in tickers:
+        cursor.execute(
+            "SELECT date FROM prices WHERE ticker_id = ? ORDER BY date",
+            (ticker_id,)
+        )
+        rows = cursor.fetchall()
+        if not rows:
+            continue
+
+        # Normalise stored dates to YYYY-MM-DD (strip time component if present)
+        existing = {r[0][:10] for r in rows}
+        min_d = datetime.strptime(min(existing), "%Y-%m-%d").date()
+        max_d = datetime.strptime(max(existing), "%Y-%m-%d").date()
+
+        # ── Historical gap detection ─────────────────────────────────────────
+        # Build the set of weekdays in [min_d, max_d] that are absent from the DB
+        missing_weekdays = []
+        d = min_d
+        while d <= max_d:
+            if d.weekday() < 5 and d.strftime("%Y-%m-%d") not in existing:
+                missing_weekdays.append(d)
+            d += timedelta(days=1)
+
+        # Group consecutive missing weekdays; ignore runs ≤ 4 (explainable by
+        # holiday weeks — the longest US holiday stretch is ~4 trading days)
+        fetch_ranges = []
+        if missing_weekdays:
+            group_start = missing_weekdays[0]
+            group_end = missing_weekdays[0]
+            for day in missing_weekdays[1:]:
+                if (day - group_end).days <= 4:   # still part of same gap
+                    group_end = day
+                else:
+                    if (group_end - group_start).days >= 4:  # real gap
+                        fetch_ranges.append((group_start, group_end))
+                    group_start = day
+                    group_end = day
+            if (group_end - group_start).days >= 4:
+                fetch_ranges.append((group_start, group_end))
+
+        # ── Always catch up to today ─────────────────────────────────────────
+        if max_d < today:
+            fetch_ranges.append((max_d, today))
+
+        if not fetch_ranges:
+            continue
+
+        filled = 0
+        for start, end in fetch_ranges:
+            prices = client.get_daily_prices(
+                symbol,
+                start_date=start.strftime("%Y-%m-%d"),
+                end_date=end.strftime("%Y-%m-%d"),
+            )
+            if prices:
+                count = insert_prices(conn, ticker_id, prices)
+                filled += count
+
+        if filled > 0:
+            print(f"  {symbol}: filled {filled} prices")
+            total_filled += filled
+
+    conn.close()
+
+    if total_filled:
+        print(f"✅ Gap fill complete: {total_filled} prices inserted\n")
+    else:
+        print("✅ No gaps found\n")
+
+
 def main():
     """Main update workflow."""
     print("\n" + "=" * 60)
@@ -454,10 +552,13 @@ def main():
         # Step 1: Fetch prices
         fetch_prices(config)
 
-        # Step 2: Calculate indicators
+        # Step 2: Fill any gaps missed by the daily fetch
+        fill_price_gaps(config)
+
+        # Step 3: Calculate indicators
         calculate_indicators(config)
 
-        # Step 3: Generate signals
+        # Step 4: Generate signals
         generate_signals(config)
 
         print("=" * 60)

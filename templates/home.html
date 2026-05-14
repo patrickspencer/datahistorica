@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Historica</title>
-    <link rel="stylesheet" href="/static/style.css?v=20260509-2">
+    <link rel="stylesheet" href="/static/style.css?v=20260513-1">
 </head>
 <body>
     <div class="container">
@@ -16,6 +16,7 @@
                 <li><a href="/gtaa3">GTAA AGG 3</a></li>
                 <li><a href="/dual-momentum">Dual Momentum</a></li>
                 <li><a href="/backtests">Backtests</a></li>
+                <li><a href="/etf/SPMO">SPMO</a></li>
                 <li>
                     <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
                         <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -103,10 +104,10 @@
                     </thead>
                     <tbody>
                         {{range .GTAAAssets}}
-                        <tr {{if .IsSelected6}}class="selected"{{end}} data-above-ma="{{.AboveMA}}" data-is-selected="{{.IsSelected6}}" data-ma200="{{printf "%.2f" .MA200}}" data-ma215="{{printf "%.2f" .MA215}}">
+                        <tr {{if .IsSelected6}}class="selected"{{end}} data-above-ma="{{.AboveMA}}" data-is-selected="{{.IsSelected6}}" data-ma200="{{printf "%.2f" .MA200}}" data-ma215="{{printf "%.2f" .MA215}}" data-ticker="{{.Symbol}}">
                             <td class="text-left">{{.Rank}}</td>
                             <td class="text-left">{{.Description}}</td>
-                            <td class="text-left"><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Symbol}}</a></td>
+                            <td class="text-left"><a href="/etf/{{.Symbol}}">{{.Symbol}}</a></td>
                             <td class="text-left">${{printf "%.2f" .Price}}</td>
                             <td class="text-left ma-value">${{printf "%.2f" .MA200}}</td>
                             <td class="text-left">{{if .AboveMA}}✓{{else}}✗{{end}}</td>
@@ -146,33 +147,33 @@
                         {{if gt .DualMomentum.USROC12M .DualMomentum.IntlROC12M}}
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}class="selected"{{end}}>
                             <td class="text-left">US Equity</td>
-                            <td class="text-left"><a href="{{.DualMomentum.USURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.USSymbol}}</a></td>
+                            <td class="text-left"><a href="/etf/{{.DualMomentum.USSymbol}}">{{.DualMomentum.USSymbol}}</a></td>
                             <td class="text-left {{if gt .DualMomentum.USROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.USROC12M 100.0)}}%</td>
                             <td class="text-left">${{printf "%.2f" .DualMomentum.USPrice}}</td>
                         </tr>
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}class="selected"{{end}}>
                             <td class="text-left">International Equity</td>
-                            <td class="text-left"><a href="{{.DualMomentum.IntlURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.IntlSymbol}}</a></td>
+                            <td class="text-left"><a href="/etf/{{.DualMomentum.IntlSymbol}}">{{.DualMomentum.IntlSymbol}}</a></td>
                             <td class="text-left {{if gt .DualMomentum.IntlROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.IntlROC12M 100.0)}}%</td>
                             <td class="text-left">${{printf "%.2f" .DualMomentum.IntlPrice}}</td>
                         </tr>
                         {{else}}
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}class="selected"{{end}}>
                             <td class="text-left">International Equity</td>
-                            <td class="text-left"><a href="{{.DualMomentum.IntlURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.IntlSymbol}}</a></td>
+                            <td class="text-left"><a href="/etf/{{.DualMomentum.IntlSymbol}}">{{.DualMomentum.IntlSymbol}}</a></td>
                             <td class="text-left {{if gt .DualMomentum.IntlROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.IntlROC12M 100.0)}}%</td>
                             <td class="text-left">${{printf "%.2f" .DualMomentum.IntlPrice}}</td>
                         </tr>
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}class="selected"{{end}}>
                             <td class="text-left">US Equity</td>
-                            <td class="text-left"><a href="{{.DualMomentum.USURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.USSymbol}}</a></td>
+                            <td class="text-left"><a href="/etf/{{.DualMomentum.USSymbol}}">{{.DualMomentum.USSymbol}}</a></td>
                             <td class="text-left {{if gt .DualMomentum.USROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.USROC12M 100.0)}}%</td>
                             <td class="text-left">${{printf "%.2f" .DualMomentum.USPrice}}</td>
                         </tr>
                         {{end}}
                         <tr {{if eq .DualMomentum.Selected .DualMomentum.CashSymbol}}class="selected"{{end}}>
                             <td class="text-left">Cash / T-Bills</td>
-                            <td class="text-left"><a href="{{.DualMomentum.CashURL}}" target="_blank" rel="noopener noreferrer">{{.DualMomentum.CashSymbol}}</a></td>
+                            <td class="text-left"><a href="/etf/{{.DualMomentum.CashSymbol}}">{{.DualMomentum.CashSymbol}}</a></td>
                             <td class="text-left positive">{{printf "%.2f" (mul .DualMomentum.CashYield 100.0)}}%</td>
                             <td class="text-left">${{printf "%.2f" .DualMomentum.CashPrice}}</td>
                         </tr>
@@ -273,37 +274,58 @@
             });
         });
 
+        // Returns all GTAA rows sorted by rank, optionally excluding hidden ones
+        function getSortedRows(visibleOnly) {
+            const selector = visibleOnly
+                ? '.data-table tbody tr[data-above-ma]:not(.hidden-row)'
+                : '.data-table tbody tr[data-above-ma]';
+            return Array.from(document.querySelectorAll(selector)).sort((a, b) =>
+                parseInt(a.querySelector('td:first-child').textContent) -
+                parseInt(b.querySelector('td:first-child').textContent)
+            );
+        }
+
+        // Re-highlights the top N visible above-MA rows; called on toggle and on load
+        function reapplySelection() {
+            const numHoldings = parseInt(document.getElementById('numHoldings').value) || 6;
+            const allRows = getSortedRows(false);
+            let selectedCount = 0;
+            allRows.forEach(row => {
+                const isAboveMA = row.getAttribute('data-above-ma') === 'true';
+                const isHidden = row.classList.contains('hidden-row');
+                if (!isHidden && isAboveMA && selectedCount < numHoldings) {
+                    row.classList.add('selected');
+                    selectedCount++;
+                } else {
+                    row.classList.remove('selected');
+                }
+            });
+        }
+
         // Investment amount calculator for GTAA table
         function updateInvestmentAmounts() {
             const totalAmount = parseFloat(document.getElementById('investmentAmount').value) || 0;
             const numHoldings = parseInt(document.getElementById('numHoldings').value) || 6;
             const slotAmount = totalAmount / numHoldings;
 
-            // Get all rows in the GTAA table (sorted by rank)
-            const rows = document.querySelectorAll('.data-table tbody tr[data-above-ma]');
+            // Only count and rank visible rows
+            const rowsArray = getSortedRows(true);
 
-            // Convert to array and sort by rank
-            const rowsArray = Array.from(rows);
-            rowsArray.sort((a, b) => {
-                const rankA = parseInt(a.querySelector('td:first-child').textContent);
-                const rankB = parseInt(b.querySelector('td:first-child').textContent);
-                return rankA - rankB;
-            });
-
-            // Update amounts and highlighting for top N holdings
-            rowsArray.forEach((row, index) => {
+            let selectedCount = 0;
+            rowsArray.forEach(row => {
                 const amountCell = row.querySelector('.investment-amount');
                 const isAboveMA = row.getAttribute('data-above-ma') === 'true';
 
-                // Highlight top N assets that are above MA200
-                if (index < numHoldings && isAboveMA) {
+                // Highlight top N visible assets that are above MA
+                if (isAboveMA && selectedCount < numHoldings) {
                     row.classList.add('selected');
+                    selectedCount++;
                 } else {
                     row.classList.remove('selected');
                 }
 
                 // Update investment amounts
-                if (index < numHoldings && totalAmount > 0) {
+                if (selectedCount <= numHoldings && totalAmount > 0 && isAboveMA) {
                     amountCell.textContent = '$' + slotAmount.toLocaleString('en-US', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
@@ -322,8 +344,8 @@
         function updateBILMessage(numHoldings, slotAmount, totalAmount) {
             const noteElement = document.querySelector('.gtaa-note');
 
-            // Count how many assets are above MA200
-            const rowsAboveMA = document.querySelectorAll('.data-table tbody tr[data-above-ma="true"]');
+            // Count visible above-MA rows only
+            const rowsAboveMA = document.querySelectorAll('.data-table tbody tr[data-above-ma="true"]:not(.hidden-row)');
             const assetsAboveMA = rowsAboveMA.length;
             const emptySlots = Math.max(0, numHoldings - assetsAboveMA);
 
@@ -341,6 +363,7 @@
         // Add event listeners
         document.getElementById('investmentAmount').addEventListener('input', updateInvestmentAmounts);
         document.getElementById('numHoldings').addEventListener('input', updateInvestmentAmounts);
+
 
         // MA toggle functionality
         document.getElementById('maToggle').addEventListener('change', function() {

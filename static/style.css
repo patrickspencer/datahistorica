@@ -196,11 +196,18 @@ nav a:hover {
     font-size: 1.1rem;
 }
 
+.card h3.etf-section-heading {
+    color: var(--text-color) !important;
+    margin-top: 1.5rem;
+    margin-bottom: 0.25rem;
+    font-size: 1.1rem;
+}
+
 /* Meta info */
 .meta {
     font-size: 0.85rem;
     color: var(--meta-text);
-    margin-bottom: 1rem;
+    margin: 0.5rem 0;
     background: var(--meta-bg);
     padding: 1rem;
     border-radius: 4px;
@@ -672,7 +679,7 @@ footer {
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 2rem 0;
+    margin: 0.5rem 0;
     background: var(--card-bg);
     box-shadow: 0 2px 4px var(--shadow-color);
     font-size: 0.9em;

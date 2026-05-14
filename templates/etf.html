@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backtest Results - Strategy Tracker</title>
+    <title>{{.Symbol}} - Data Historica</title>
     <link rel="stylesheet" href="/static/style.css?v=20260513-1">
 </head>
 <body>
@@ -14,7 +14,7 @@
                 <li><a href="/gtaa6">GTAA AGG 6</a></li>
                 <li><a href="/gtaa3">GTAA AGG 3</a></li>
                 <li><a href="/dual-momentum">Dual Momentum</a></li>
-                <li><a href="/backtests" class="active">Backtests</a></li>
+                <li><a href="/backtests">Backtests</a></li>
                 <li><a href="/etf/SPMO">SPMO</a></li>
                 <li>
                     <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
@@ -38,65 +38,74 @@
         </nav>
 
         <main>
-            <h2>Performance Comparison</h2>
-            <table class="backtest-table">
-                <thead>
-                    <tr>
-                        <th>Strategy</th>
-                        <th>Variant</th>
-                        <th class="text-right">Period</th>
-                        <th class="text-right">Pre-Tax CAGR</th>
-                        <th class="text-right">After-Tax CAGR</th>
-                        <th class="text-right">Tax Drag</th>
-                        <th class="text-right">Final Value</th>
-                        <th class="text-right">Transactions</th>
-                        <th class="text-center">Details</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{range $index, $summary := .Summaries}}
-                    <tr>
-                        <td><strong>{{$summary.Config.StrategyName}}</strong></td>
-                        <td>{{$summary.Config.Variant}}</td>
-                        <td class="text-right" style="font-size: 0.85em;">{{printf "%.1f" $summary.Metrics.Years}}y</td>
-                        <td class="text-right positive">{{printf "%.2f%%" (mul $summary.Metrics.PreTaxCAGR 100)}}</td>
-                        <td class="text-right positive">{{printf "%.2f%%" (mul $summary.Metrics.AfterTaxCAGR 100)}}</td>
-                        <td class="text-right negative">{{printf "%.2f%%" (mul $summary.Metrics.TaxDrag 100)}}</td>
-                        <td class="text-right">${{printf "%.0f" $summary.Metrics.PreTaxFinal}}</td>
-                        <td class="text-right">{{if $summary.Metrics.NumTransactions.Valid}}{{$summary.Metrics.NumTransactions.Int64}}{{else}}-{{end}}</td>
-                        <td class="text-center">
-                            <a href="/backtests/detail?strategy={{$summary.Config.StrategyName}}&variant={{$summary.Config.Variant}}" class="strategy-link">
-                                View →
-                            </a>
-                        </td>
-                    </tr>
-                    {{end}}
-                </tbody>
-            </table>
+            <div class="card">
+                <h2>{{.Symbol}}</h2>
 
-            <div class="warning-box">
-                <strong>📝 Note:</strong> All backtests use lot-level FIFO accounting with realistic tax assumptions:
-                <ul style="margin: 0.5rem 0 0 1.5rem;">
-                    <li>Short-term gains (≤ 1 year): 40.8% tax rate</li>
-                    <li>Long-term gains (> 1 year): 23.8% tax rate</li>
-                    <li>Tax loss carryover across years</li>
-                    <li>Year-end tax payments with position liquidation if needed</li>
-                </ul>
+                <h3 class="etf-section-heading">Info</h3>
+                <div class="meta">
+                    <strong>Fund Type:</strong> {{.Description}}<br>
+                    <strong>Expense Ratio:</strong> {{.ExpenseRatio}}<br>
+                    <strong>External Page:</strong> <a href="{{.ExternalURL}}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">Fund info</a>
+                </div>
+
+                <h3 class="etf-section-heading">Current Indicators</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Metric</th>
+                            <th class="text-left">Value</th>
+                            <th class="text-left">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-left">Current Price</td>
+                            <td class="text-left">${{printf "%.2f" .CurrentPrice}}</td>
+                            <td class="text-left">—</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left">200-Day MA</td>
+                            <td class="text-left">${{printf "%.2f" .MA200}}</td>
+                            <td class="text-left {{if .AboveMA200}}positive{{else}}negative{{end}}">{{if .AboveMA200}}Above{{else}}Below{{end}}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left">10-Month SMA (215-Day)</td>
+                            <td class="text-left">${{printf "%.2f" .MA215}}</td>
+                            <td class="text-left {{if .AboveMA215}}positive{{else}}negative{{end}}">{{if .AboveMA215}}Above{{else}}Below{{end}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 class="etf-section-heading">Price History (Last 250 Trading Days)</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Date</th>
+                            <th class="text-left">Adj. Close</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .Prices}}
+                        <tr>
+                            <td class="text-left">{{formatDateLong .Date}}</td>
+                            <td class="text-left">${{printf "%.2f" .Price}}</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
             </div>
         </main>
 
         <footer>
-            <p>Backtest data from 1997-2026. For informational purposes only. Not financial advice.</p>
-            <p>Strategy Tracker &copy; 2026 | v{{.Version}}</p>
+            <p>Data updated daily. For informational purposes only. Not financial advice.</p>
+            <p>Data Historica &copy; 2026 | v{{.Version}}</p>
         </footer>
     </div>
 
     <script>
-        // Theme management
         (function() {
             'use strict';
 
-            // Apply theme
             function applyTheme(theme) {
                 const root = document.documentElement;
                 if (theme === 'dark') {
@@ -107,12 +116,10 @@
                 localStorage.setItem('theme', theme);
             }
 
-            // Get current theme
             function getCurrentTheme() {
                 return document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light';
             }
 
-            // Initialize theme immediately to prevent flash
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
                 applyTheme(savedTheme);
@@ -120,13 +127,11 @@
                 applyTheme('dark');
             }
 
-            // Set up toggle button when DOM is ready
             window.addEventListener('DOMContentLoaded', function() {
                 const toggleButton = document.getElementById('theme-toggle');
                 if (toggleButton) {
                     toggleButton.addEventListener('click', function() {
-                        const currentTheme = getCurrentTheme();
-                        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                        const newTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
                         applyTheme(newTheme);
                     });
                 }
