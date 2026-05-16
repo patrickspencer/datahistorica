@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Config.StrategyName}} - {{.Config.Variant}} - Strategy Tracker</title>
-    <link rel="stylesheet" href="/static/style.css?v=20260515-5">
+    <script>(function(){try{var t=localStorage.getItem("theme");if(!t&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)t="dark";if(t==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="/static/style.css?v=20260515-7">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -21,17 +23,17 @@
 
             {{if .Config.Description}}
             <div class="info-box">
-                <h3>Strategy Description</h3>
+                <h3 class="section-heading">Strategy Description</h3>
                 <p>{{.Config.Description}}</p>
                 <p><strong>Universe:</strong> {{.Config.UniverseETFs}}</p>
                 <p><strong>Rebalance Frequency:</strong> {{.Config.RebalanceFrequency}} |
-                   <strong>Period:</strong> {{.Config.StartDate}} to {{.Config.EndDate}}
+                   <strong>Period:</strong> {{formatDateLong .Config.StartDate}} to {{formatDateLong .Config.EndDate}}
                    {{if .Config.TopN.Valid}}| <strong>Top N:</strong> {{.Config.TopN.Int64}}{{end}}</p>
             </div>
             {{end}}
 
             <div class="section-header">
-                <h2>Portfolio Value Over Time</h2>
+                <h2 class="section-heading">Portfolio Value Over Time</h2>
                 <div class="info">After-tax performance</div>
             </div>
 
@@ -40,7 +42,7 @@
             </div>
 
             <div class="section-header">
-                <h2>Performance Summary</h2>
+                <h2 class="section-heading">Performance Summary</h2>
                 <div class="info">{{printf "%.1f" .Metrics.Years}} years of data</div>
             </div>
 
@@ -54,7 +56,7 @@
                 <tbody>
                     <tr>
                         <td>Period</td>
-                        <td class="text-right">{{.Config.StartDate}} to {{.Config.EndDate}} ({{printf "%.1f" .Metrics.Years}} years)</td>
+                        <td class="text-right">{{formatDateLong .Config.StartDate}} to {{formatDateLong .Config.EndDate}} ({{printf "%.1f" .Metrics.Years}} years)</td>
                     </tr>
                     <tr>
                         <td>After-Tax CAGR</td>
@@ -70,15 +72,15 @@
                     </tr>
                     <tr>
                         <td>Final Value (After-Tax)</td>
-                        <td class="text-right">${{printf "%.0f" .Metrics.AfterTaxFinal}} (from ${{printf "%.0f" .Config.InitialCapital}})</td>
+                        <td class="text-right">${{formatMoney .Metrics.AfterTaxFinal}} (from ${{formatMoney .Config.InitialCapital}})</td>
                     </tr>
                     <tr>
                         <td>Final Value (Pre-Tax)</td>
-                        <td class="text-right">${{printf "%.0f" .Metrics.PreTaxFinal}}</td>
+                        <td class="text-right">${{formatMoney .Metrics.PreTaxFinal}}</td>
                     </tr>
                     <tr>
                         <td>Total Taxes Paid</td>
-                        <td class="text-right">${{printf "%.0f" .Metrics.TotalTaxes}}</td>
+                        <td class="text-right">${{formatMoney .Metrics.TotalTaxes}}</td>
                     </tr>
                     <tr>
                         <td>Effective Tax Rate</td>
@@ -101,7 +103,7 @@
 
             {{if .Drawdowns}}
             <div class="section-header">
-                <h2>Drawdown Analysis</h2>
+                <h2 class="section-heading">Drawdown Analysis</h2>
                 <div class="info">Top {{len .Drawdowns}} drawdowns</div>
             </div>
 
@@ -139,7 +141,7 @@
 
             {{if .RollingReturns}}
             <div class="section-header">
-                <h2>Rolling Period Analysis</h2>
+                <h2 class="section-heading">Rolling Period Analysis</h2>
                 <div class="info">Best and worst CAGR for rolling periods</div>
             </div>
 
@@ -168,7 +170,7 @@
             {{end}}
 
             <div class="section-header">
-                <h2>Annual Returns</h2>
+                <h2 class="section-heading">Annual Returns</h2>
                 <div class="info">{{len .AnnualReturns}} years</div>
             </div>
 
@@ -194,15 +196,15 @@
                             {{printf "%.2f%%" (mul .AfterTaxReturn 100)}}
                         </td>
                         <td class="text-right negative">{{printf "%.2f%%" (mul .TaxDrag 100)}}</td>
-                        <td class="text-right">${{printf "%.0f" .PreTaxEnd}}</td>
-                        <td class="text-right">${{printf "%.0f" .AfterTaxEnd}}</td>
+                        <td class="text-right">${{formatMoney .PreTaxEnd}}</td>
+                        <td class="text-right">${{formatMoney .AfterTaxEnd}}</td>
                     </tr>
                     {{end}}
                 </tbody>
             </table>
 
             <div class="section-header">
-                <h2>Monthly Returns</h2>
+                <h2 class="section-heading">Monthly Returns</h2>
                 <div class="info">Last 120 months | {{len .MonthlyReturns}} total</div>
             </div>
 
@@ -211,26 +213,25 @@
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th class="text-right">Pre-Tax Value</th>
-                            <th class="text-right">After-Tax Value</th>
                             <th class="text-right">Pre-Tax Return</th>
                             <th class="text-right">After-Tax Return</th>
+                            <th class="text-right">Pre-Tax Value</th>
+                            <th class="text-right">After-Tax Value</th>
                             <th class="text-center">Holdings</th>
-                            <th class="text-right">Cash %</th>
                         </tr>
                     </thead>
                     <tbody>
                         {{range .MonthlyReturns}}
                         <tr>
                             <td>{{formatMonthYear .Date}}</td>
-                            <td class="text-right">${{printf "%.0f" .PreTaxValue}}</td>
-                            <td class="text-right">${{printf "%.0f" .AfterTaxValue}}</td>
                             <td class="text-right {{if .PreTaxReturn.Valid}}{{if gt .PreTaxReturn.Float64 0.0}}positive{{else if lt .PreTaxReturn.Float64 0.0}}negative{{else}}neutral{{end}}{{else}}neutral{{end}}">
                                 {{if .PreTaxReturn.Valid}}{{printf "%.2f%%" (mul .PreTaxReturn.Float64 100)}}{{else}}-{{end}}
                             </td>
                             <td class="text-right {{if .AfterTaxReturn.Valid}}{{if gt .AfterTaxReturn.Float64 0.0}}positive{{else if lt .AfterTaxReturn.Float64 0.0}}negative{{else}}neutral{{end}}{{else}}neutral{{end}}">
                                 {{if .AfterTaxReturn.Valid}}{{printf "%.2f%%" (mul .AfterTaxReturn.Float64 100)}}{{else}}-{{end}}
                             </td>
+                            <td class="text-right">${{formatMoney .PreTaxValue}}</td>
+                            <td class="text-right">${{formatMoney .AfterTaxValue}}</td>
                             <td class="text-center" style="font-size: 0.85em;">
                                 {{if .Holdings.Valid}}
                                     {{.Holdings.String}}
@@ -238,7 +239,6 @@
                                     <span class="neutral">-</span>
                                 {{end}}
                             </td>
-                            <td class="text-right">{{printf "%.0f%%" (mul .CashWeight 100)}}</td>
                         </tr>
                         {{end}}
                     </tbody>
@@ -258,7 +258,7 @@
         </main>
 
         <footer>
-            <p>Backtest data from {{.Config.StartDate}} to {{.Config.EndDate}}. For informational purposes only. Not financial advice.</p>
+            <p>Backtest data from {{formatDateLong .Config.StartDate}} to {{formatDateLong .Config.EndDate}}. For informational purposes only. Not financial advice.</p>
             <p>Strategy Tracker &copy; 2026 | v{{.Version}}</p>
         </footer>
     </div>

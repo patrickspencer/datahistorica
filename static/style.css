@@ -527,6 +527,38 @@ footer {
     color: var(--meta-text);
 }
 
+/* Uniform sub-section heading for backtest pages. Applies to any
+   h2/h3/h4 element so headings across gtaa6, gtaa3, dual_momentum, and
+   backtest detail pages share one look. */
+.section-heading,
+h2.section-heading,
+h3.section-heading,
+h4.section-heading {
+    color: var(--text-color);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 2.5rem 0 1rem 0;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header .section-heading {
+    margin: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* Holdings table: render symbol links in the normal text color so they
+   blend with surrounding cells. */
+.holdings-table a {
+    color: var(--text-color);
+    text-decoration: underline;
+}
+
+.holdings-table a:hover {
+    color: var(--primary-color);
+}
+
 .info-box {
     background: var(--info-box-bg);
     border-left: 4px solid var(--info-box-border);

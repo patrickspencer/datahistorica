@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dual Momentum ROC12 - Portfolio Tracker</title>
-    <link rel="stylesheet" href="/static/style.css?v=20260515-5">
+    <title>Dual Momentum - Portfolio Tracker</title>
+    <script>(function(){try{var t=localStorage.getItem("theme");if(!t&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)t="dark";if(t==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="/static/style.css?v=20260515-7">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -16,104 +18,129 @@
     <h2>{{.Name}}</h2>
 
     <div class="meta">
-        <strong>Strategy:</strong> US vs International equity selection based on 12-month ROC<br>
-        <strong>Allocation:</strong> 100% to single best asset (or cash if both negative)<br>
+        <strong>Universe:</strong> VFIAX (US large cap, S&amp;P 500) / VTIAX (international equity) / AGG (US aggregate bonds)<br>
+        <strong>Selection rule:</strong> rank equities by 12-month ROC; hold the highest that beats the 3-month T-bill ROC12 hurdle, otherwise hold AGG<br>
+        <strong>Allocation:</strong> 100% to the single selected sleeve<br>
         <strong>Signal Date:</strong> {{formatDate .SignalDate}}<br>
         <strong>Last Updated:</strong> {{formatDate .LastUpdated}}
     </div>
 
-    {{if .Backtests}}
-    {{range $idx, $bt := .Backtests}}
-    <div class="backtest-section">
-        <h3>📊 {{$bt.Config.Variant}} Backtest Analysis</h3>
-        <p style="margin: 0.5rem 0; color: var(--meta-text);">
-            <a href="/backtests/detail?strategy={{$bt.Config.StrategyName}}&variant={{$bt.Config.Variant}}" class="strategy-link">View full details →</a>
-        </p>
+    <h3 class="section-heading">Current Signal</h3>
+    <table class="data-table holdings-table">
+        <thead>
+            <tr>
+                <th class="text-left">Asset</th>
+                <th class="text-left">Ticker</th>
+                <th class="text-left">12M ROC</th>
+                <th class="text-left">Above T-Bill?</th>
+                <th class="text-left">Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr {{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}class="selected" {{end}}>
+                <td class="text-left">US Equity (S&amp;P 500)</td>
+                <td class="text-left"><a href="/etf/{{.DualMomentum.USSymbol}}">{{.DualMomentum.USSymbol}}</a></td>
+                <td class="text-left {{if gt .DualMomentum.USROC12M 0.0}}positive{{else}}negative{{end}}">
+                    {{printf "%.2f" (mul .DualMomentum.USROC12M 100.0)}}%</td>
+                <td class="text-left">{{if .DualMomentum.USAbove}}✓{{else}}✗{{end}}</td>
+                <td class="text-left">${{printf "%.2f" .DualMomentum.USPrice}}</td>
+            </tr>
+            <tr {{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}class="selected" {{end}}>
+                <td class="text-left">International Equity</td>
+                <td class="text-left"><a href="/etf/{{.DualMomentum.IntlSymbol}}">{{.DualMomentum.IntlSymbol}}</a></td>
+                <td class="text-left {{if gt .DualMomentum.IntlROC12M 0.0}}positive{{else}}negative{{end}}">
+                    {{printf "%.2f" (mul .DualMomentum.IntlROC12M 100.0)}}%</td>
+                <td class="text-left">{{if .DualMomentum.IntlAbove}}✓{{else}}✗{{end}}</td>
+                <td class="text-left">${{printf "%.2f" .DualMomentum.IntlPrice}}</td>
+            </tr>
+            <tr {{if eq .DualMomentum.Selected .DualMomentum.BondSymbol}}class="selected" {{end}}>
+                <td class="text-left">US Aggregate Bonds</td>
+                <td class="text-left"><a href="/etf/{{.DualMomentum.BondSymbol}}">{{.DualMomentum.BondSymbol}}</a></td>
+                <td class="text-left {{if gt .DualMomentum.BondROC12M 0.0}}positive{{else}}negative{{end}}">
+                    {{printf "%.2f" (mul .DualMomentum.BondROC12M 100.0)}}%</td>
+                <td class="text-left">—</td>
+                <td class="text-left">${{printf "%.2f" .DualMomentum.BondPrice}}</td>
+            </tr>
+            <tr>
+                <td class="text-left">3-Month T-Bill hurdle</td>
+                <td class="text-left">TBILL</td>
+                <td class="text-left">{{printf "%.2f" (mul .DualMomentum.TBillROC12M 100.0)}}%</td>
+                <td class="text-left">—</td>
+                <td class="text-left">—</td>
+            </tr>
+        </tbody>
+    </table>
 
-        <h4 style="margin-top: 1.5rem;">Performance Summary</h4>
+    <div class="meta" style="margin-top: 1rem;">
+        <strong>Current Selection:</strong> <strong>{{.DualMomentum.Selected}}</strong><br>
+        {{if .DualMomentum.Reason}}<strong>Reason:</strong> {{.DualMomentum.Reason}}{{end}}
+    </div>
+
+    {{with .Backtest}}
+    <div class="backtest-section">
+        <h3 class="section-heading">📊 Backtest: {{.Config.Variant}}</h3>
+        {{if .Config.Description}}
+        <p class="meta" style="margin-top: 0.5rem;">{{.Config.Description}}</p>
+        {{end}}
+
+        <div class="card" style="padding: 1.5rem; margin-top: 1rem;">
+            <h4 class="section-heading" style="margin-top: 0;">Portfolio Value Over Time</h4>
+            <canvas id="portfolioChart" style="max-height: 360px;"></canvas>
+        </div>
+
+        <h4 class="section-heading">Performance Summary</h4>
         <table class="returns-table">
             <thead>
-                <tr>
-                    <th>Metric</th>
-                    <th class="text-right">Value</th>
-                </tr>
+                <tr><th>Metric</th><th class="text-right">Value</th></tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>Period</td>
-                    <td class="text-right">{{$bt.Config.StartDate}} to {{$bt.Config.EndDate}} ({{printf "%.1f" $bt.Metrics.Years}} years)</td>
-                </tr>
-                <tr>
-                    <td>After-Tax CAGR</td>
-                    <td class="text-right positive"><strong>{{printf "%.2f%%" (mul $bt.Metrics.AfterTaxCAGR 100)}}</strong></td>
-                </tr>
-                <tr>
-                    <td>Pre-Tax CAGR</td>
-                    <td class="text-right positive">{{printf "%.2f%%" (mul $bt.Metrics.PreTaxCAGR 100)}}</td>
-                </tr>
-                <tr>
-                    <td>Tax Drag</td>
-                    <td class="text-right negative">{{printf "%.2f%%" (mul $bt.Metrics.TaxDrag 100)}}</td>
-                </tr>
-                <tr>
-                    <td>Final Value (After-Tax)</td>
-                    <td class="text-right">${{printf "%.0f" $bt.Metrics.AfterTaxFinal}}</td>
-                </tr>
-                <tr>
-                    <td>Total Taxes Paid</td>
-                    <td class="text-right">${{printf "%.0f" $bt.Metrics.TotalTaxes}}</td>
-                </tr>
-                {{if $bt.Metrics.MaxDrawdown.Valid}}
-                <tr>
-                    <td>Maximum Drawdown</td>
-                    <td class="text-right negative">{{printf "%.2f%%" (mul $bt.Metrics.MaxDrawdown.Float64 100)}}</td>
-                </tr>
+                <tr><td>Period</td><td class="text-right">{{formatDateLong .Config.StartDate}} to {{formatDateLong .Config.EndDate}} ({{printf "%.1f" .Metrics.Years}} years)</td></tr>
+                <tr><td>Pre-Tax CAGR</td><td class="text-right positive">{{printf "%.2f%%" (mul .Metrics.PreTaxCAGR 100)}}</td></tr>
+                <tr><td>After-Tax CAGR</td><td class="text-right positive"><strong>{{printf "%.2f%%" (mul .Metrics.AfterTaxCAGR 100)}}</strong></td></tr>
+                <tr><td>Tax Drag</td><td class="text-right negative">{{printf "%.2f%%" (mul .Metrics.TaxDrag 100)}}</td></tr>
+                <tr><td>Final Value (Pre-Tax)</td><td class="text-right">${{formatMoney .Metrics.PreTaxFinal}} (from ${{formatMoney .Config.InitialCapital}})</td></tr>
+                <tr><td>Final Value (After-Tax)</td><td class="text-right">${{formatMoney .Metrics.AfterTaxFinal}}</td></tr>
+                <tr><td>Total Taxes Paid</td><td class="text-right">${{formatMoney .Metrics.TotalTaxes}}</td></tr>
+                <tr><td>Effective Tax Rate</td><td class="text-right">{{printf "%.1f%%" (mul .Metrics.EffectiveTaxRate 100)}} on gains</td></tr>
+                {{if .Metrics.NumTransactions.Valid}}
+                <tr><td>Total Transactions</td><td class="text-right">{{.Metrics.NumTransactions.Int64}} ({{printf "%.0f" (divf (float64 .Metrics.NumTransactions.Int64) .Metrics.Years)}}/yr)</td></tr>
+                {{end}}
+                {{if .Metrics.MaxDrawdown.Valid}}
+                <tr><td>Maximum Drawdown (After-Tax)</td><td class="text-right negative">{{printf "%.2f%%" (mul .Metrics.MaxDrawdown.Float64 100)}}</td></tr>
                 {{end}}
             </tbody>
         </table>
 
-        {{if $bt.Drawdowns}}
-        <h4 style="margin-top: 2rem;">Drawdown Analysis</h4>
+        {{if .Drawdowns}}
+        <h4 class="section-heading">Drawdown Analysis (After-Tax, Top {{len .Drawdowns}})</h4>
         <table class="returns-table">
             <thead>
                 <tr>
                     <th class="text-center">Rank</th>
                     <th class="text-right">Drawdown</th>
-                    <th class="text-center">Peak Date</th>
-                    <th class="text-center">Trough Date</th>
-                    <th class="text-center">Recovery Date</th>
+                    <th class="text-center">Peak</th>
+                    <th class="text-center">Trough</th>
+                    <th class="text-center">Recovery</th>
                     <th class="text-right">Duration</th>
                 </tr>
             </thead>
             <tbody>
-                {{range $bt.Drawdowns}}
+                {{range .Drawdowns}}
                 <tr>
                     <td class="text-center">{{.Rank}}</td>
                     <td class="text-right negative"><strong>{{printf "%.2f%%" (mul .Drawdown 100)}}</strong></td>
                     <td class="text-center">{{formatMonthYear .PeakDate}}</td>
                     <td class="text-center">{{formatMonthYear .TroughDate}}</td>
-                    <td class="text-center">
-                        {{if .RecoveryDate.Valid}}
-                            {{formatMonthYear .RecoveryDate.String}}
-                        {{else}}
-                            <span class="neutral">Not recovered</span>
-                        {{end}}
-                    </td>
-                    <td class="text-right">
-                        {{if .DurationMonths.Valid}}
-                            {{.DurationMonths.Int64}} mo
-                        {{else}}
-                            <span class="neutral">Ongoing</span>
-                        {{end}}
-                    </td>
+                    <td class="text-center">{{if .RecoveryDate.Valid}}{{formatMonthYear .RecoveryDate.String}}{{else}}<span class="neutral">not yet</span>{{end}}</td>
+                    <td class="text-right">{{if .DurationMonths.Valid}}{{.DurationMonths.Int64}} mo{{else}}<span class="neutral">ongoing</span>{{end}}</td>
                 </tr>
                 {{end}}
             </tbody>
         </table>
         {{end}}
 
-        {{if $bt.RollingReturns}}
-        <h4 style="margin-top: 2rem;">Rolling Period Analysis</h4>
+        {{if .RollingReturns}}
+        <h4 class="section-heading">Rolling Period Analysis (After-Tax)</h4>
         <table class="returns-table">
             <thead>
                 <tr>
@@ -125,35 +152,88 @@
                 </tr>
             </thead>
             <tbody>
-                {{range $bt.RollingReturns}}
+                {{range .RollingReturns}}
                 <tr>
                     <td class="text-center"><strong>{{.PeriodYears}}-Year</strong></td>
                     <td class="text-right positive"><strong>{{printf "%.2f%%" (mul .BestCAGR 100)}}</strong></td>
-                    <td class="text-center">{{formatDate .BestStartDate}} to {{formatDate .BestEndDate}}</td>
+                    <td class="text-center">{{formatDate .BestStartDate}} → {{formatDate .BestEndDate}}</td>
                     <td class="text-right negative"><strong>{{printf "%.2f%%" (mul .WorstCAGR 100)}}</strong></td>
-                    <td class="text-center">{{formatDate .WorstStartDate}} to {{formatDate .WorstEndDate}}</td>
+                    <td class="text-center">{{formatDate .WorstStartDate}} → {{formatDate .WorstEndDate}}</td>
                 </tr>
                 {{end}}
             </tbody>
         </table>
         {{end}}
 
-        <p class="backtest-note">
-            Backtests use lot-level FIFO accounting with realistic tax rates (23.8% LT, 40.8% ST).
-        </p>
+        <h4 class="section-heading">Annual Returns</h4>
+        <table class="returns-table">
+            <thead>
+                <tr>
+                    <th class="text-center">Year</th>
+                    <th class="text-right">Pre-Tax Return</th>
+                    <th class="text-right">After-Tax Return</th>
+                    <th class="text-right">Tax Drag</th>
+                    <th class="text-right">Pre-Tax Value</th>
+                    <th class="text-right">After-Tax Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .AnnualReturns}}
+                <tr>
+                    <td class="text-center">{{.Year}}</td>
+                    <td class="text-right {{if gt .PreTaxReturn 0.0}}positive{{else if lt .PreTaxReturn 0.0}}negative{{else}}neutral{{end}}">{{printf "%.2f%%" (mul .PreTaxReturn 100)}}</td>
+                    <td class="text-right {{if gt .AfterTaxReturn 0.0}}positive{{else if lt .AfterTaxReturn 0.0}}negative{{else}}neutral{{end}}">{{printf "%.2f%%" (mul .AfterTaxReturn 100)}}</td>
+                    <td class="text-right negative">{{printf "%.2f%%" (mul .TaxDrag 100)}}</td>
+                    <td class="text-right">${{formatMoney .PreTaxEnd}}</td>
+                    <td class="text-right">${{formatMoney .AfterTaxEnd}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+
+        {{if .MonthlyReturns}}
+        <h4 class="section-heading">Monthly Returns <span class="info">({{len .MonthlyReturns}} months)</span></h4>
+        <div class="monthly-table-container">
+            <table class="returns-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th class="text-right">Pre-Tax Return</th>
+                        <th class="text-right">After-Tax Return</th>
+                        <th class="text-right">Pre-Tax Value</th>
+                        <th class="text-right">After-Tax Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .MonthlyReturns}}
+                    <tr>
+                        <td>{{formatMonthYear .Date}}</td>
+                        <td class="text-right {{if .PreTaxReturn.Valid}}{{if gt .PreTaxReturn.Float64 0.0}}positive{{else if lt .PreTaxReturn.Float64 0.0}}negative{{else}}neutral{{end}}{{else}}neutral{{end}}">{{if .PreTaxReturn.Valid}}{{printf "%.2f%%" (mul .PreTaxReturn.Float64 100)}}{{else}}-{{end}}</td>
+                        <td class="text-right {{if .AfterTaxReturn.Valid}}{{if gt .AfterTaxReturn.Float64 0.0}}positive{{else if lt .AfterTaxReturn.Float64 0.0}}negative{{else}}neutral{{end}}{{else}}neutral{{end}}">{{if .AfterTaxReturn.Valid}}{{printf "%.2f%%" (mul .AfterTaxReturn.Float64 100)}}{{else}}-{{end}}</td>
+                        <td class="text-right">${{formatMoney .PreTaxValue}}</td>
+                        <td class="text-right">${{formatMoney .AfterTaxValue}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+        {{end}}
     </div>
-    {{end}}
     {{end}}
 
     <div class="strategy-about">
-        <h3>About This Strategy</h3>
-        <p><strong>Selection Logic:</strong></p>
+        <h3 class="section-heading">About This Strategy</h3>
+        <p><strong>Logic:</strong></p>
         <ul>
-            <li>If both US and International have positive 12-month ROC: Select the one with higher ROC</li>
-            <li>If only one has positive ROC: Select that one</li>
-            <li>If both have negative ROC: Go to cash (BIL)</li>
+            <li>Compute the 12-month return for VFIAX (US S&amp;P 500) and VTIAX (international equity), and the 12-month rolling return on 3-month T-bills (FRED <code>DGS3MO</code>).</li>
+            <li>An equity sleeve is "passing" if its 12-month ROC is above the T-bill hurdle.</li>
+            <li>Both passing → hold the one with the higher 12-month ROC.</li>
+            <li>One passing → hold that one.</li>
+            <li>Neither passing → hold AGG (US aggregate bonds) as the defensive sleeve.</li>
         </ul>
-        <p style="margin-top: 0.5rem;"><strong>Rebalance:</strong> Monthly on last trading day.</p>
+        <p style="margin-top: 0.5rem;"><strong>Rebalance:</strong> Monthly on the last trading day.</p>
+        <p><strong>Historical proxy splices:</strong> VFIAX is extended back through VFINX (pre-2000-11-13); VTIAX through VGTSX (pre-1999-08-17) and VTMGX (1999-08-17 → 2010-11-28); AGG through VBMFX (pre-2003-09-22).</p>
+        <p style="margin-top: 0.5rem;"><a href="/backtests" class="strategy-link">Historical Backtests →</a> (older VOO/VEU-era dual-momentum runs)</p>
     </div>
 </div>
         </main>
@@ -164,6 +244,48 @@
         </footer>
     </div>
 
-
+    {{with .Backtest}}
+    <script>
+        (function() {
+            const monthlyData = [
+                {{range .MonthlyReturns}}
+                { date: '{{.Date}}', afterTaxValue: {{.AfterTaxValue}}, preTaxValue: {{.PreTaxValue}} },
+                {{end}}
+            ];
+            const reversed = monthlyData.slice().reverse();
+            const labels = reversed.map(d => d.date);
+            const afterTaxValues = reversed.map(d => d.afterTaxValue);
+            const preTaxValues = reversed.map(d => d.preTaxValue);
+            const ctx = document.getElementById('portfolioChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'After-Tax Value', data: afterTaxValues, borderColor: 'rgb(52, 152, 219)', backgroundColor: 'rgba(52, 152, 219, 0.1)', borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0, pointHoverRadius: 5 },
+                        { label: 'Pre-Tax Value', data: preTaxValues, borderColor: 'rgb(46, 204, 113)', backgroundColor: 'rgba(46, 204, 113, 0.1)', borderWidth: 2, fill: false, tension: 0.1, pointRadius: 0, pointHoverRadius: 5 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                title: (ctx) => new Date(ctx[0].label).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
+                                label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { display: true, title: { display: true, text: 'Date' }, ticks: { maxRotation: 45, minRotation: 45, autoSkip: true, maxTicksLimit: 20, callback: function(v) { return new Date(this.getLabelForValue(v)).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }); } } },
+                        y: { display: true, title: { display: true, text: 'Portfolio Value ($)' }, ticks: { callback: (v) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 }) } }
+                    }
+                }
+            });
+        })();
+    </script>
+    {{end}}
 </body>
 </html>

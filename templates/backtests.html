@@ -3,15 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backtest Results - Strategy Tracker</title>
-    <link rel="stylesheet" href="/static/style.css?v=20260515-5">
+    <title>Historical Backtests - Strategy Tracker</title>
+    <script>(function(){try{var t=localStorage.getItem("theme");if(!t&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)t="dark";if(t==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="/static/style.css?v=20260515-7">
 </head>
 <body>
     <div class="container">
         {{template "nav" .}}
 
         <main>
-            <h2>Performance Comparison</h2>
+            <h2>Historical Backtests</h2>
+
+            <div class="warning-box" style="margin-bottom: 1rem;">
+                <strong>📝 Frozen archive:</strong> These backtests are no longer being refreshed.
+                The live GTAA AGG 6 strategy and its current canonical backtest live on
+                <a href="/gtaa6">/gtaa6</a>. The live Dual Momentum signal (VFIAX / VTIAX / AGG) is on
+                <a href="/dual-momentum">/dual-momentum</a>. For the current GTAA AGG 3 signal, see
+                <a href="/gtaa3">/gtaa3</a>.
+            </div>
             <table class="backtest-table">
                 <thead>
                     <tr>

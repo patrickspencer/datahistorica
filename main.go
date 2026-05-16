@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -53,7 +54,7 @@ func main() {
 		"sub":     func(a, b float64) float64 { return a - b },
 		"div":     func(a, b float64) float64 { return a / b },
 		"divf":    func(a, b float64) float64 { return a / b },
-		"float64": func(a int) float64 { return float64(a) },
+		"float64": func(a int64) float64 { return float64(a) },
 		"formatDate": func(dateStr string) string {
 			// Remove time portion from ISO datetime string
 			if len(dateStr) >= 10 {
@@ -73,6 +74,38 @@ func main() {
 			}
 			// Format: "May 8, 2026" (no leading zero on day)
 			return t.Format("January 2, 2006")
+		},
+		"formatMoney": func(v float64) string {
+			n := int64(v)
+			neg := n < 0
+			if neg {
+				n = -n
+			}
+			s := fmt.Sprintf("%d", n)
+			if len(s) <= 3 {
+				if neg {
+					return "-" + s
+				}
+				return s
+			}
+			var b strings.Builder
+			pre := len(s) % 3
+			if pre > 0 {
+				b.WriteString(s[:pre])
+				if len(s) > pre {
+					b.WriteByte(',')
+				}
+			}
+			for i := pre; i < len(s); i += 3 {
+				b.WriteString(s[i : i+3])
+				if i+3 < len(s) {
+					b.WriteByte(',')
+				}
+			}
+			if neg {
+				return "-" + b.String()
+			}
+			return b.String()
 		},
 		"formatMonthYear": func(dateStr string) string {
 			// Parse ISO datetime string and format as "Jan, 2024"
@@ -143,6 +176,7 @@ type Holding struct {
 	MomentumScore float64
 	Reason        string
 	IsCash        bool
+	Rank          int
 }
 
 type AssetData struct {
@@ -165,88 +199,106 @@ type AssetData struct {
 
 // Asset descriptions
 var assetDescriptions = map[string]string{
-	"SPMO": "US Large Cap Momen.",
-	"MTUM": "US Momentum Factor",
-	"VBK":  "US Small Cap Growth",
-	"VBR":  "US Small Cap Value",
-	"VTV":  "US Large Cap Value",
-	"VEA":  "Developed Markets",
-	"VWO":  "Emerging Markets",
-	"VNQ":  "US Real Estate",
-	"QQQM": "US Tech (Nasdaq)",
-	"QQQ":  "US Tech (Nasdaq)",
-	"GSG":  "Commodities",
-	"IAU":  "Gold",
-	"VCIT": "Corporate Bonds (Int)",
-	"VGIT": "Gov Bonds (Int)",
-	"VGLT": "Gov Bonds (Long)",
-	"IGOV": "Intl Gov Bonds",
-	"VOO":  "US Total Market",
-	"VEU":  "International Equity",
-	"BIL":  "Short-Term T-Bills (Cash)",
+	"SPMO":  "US Large Cap Momen.",
+	"MTUM":  "US Momentum Factor",
+	"VBK":   "US Small Cap Growth",
+	"VBR":   "US Small Cap Value",
+	"VTV":   "US Large Cap Value",
+	"VEA":   "Developed Markets",
+	"VWO":   "Emerging Markets",
+	"VNQ":   "US Real Estate",
+	"QQQM":  "US Tech (Nasdaq)",
+	"QQQ":   "US Tech (Nasdaq)",
+	"GSG":   "Commodities",
+	"IAU":   "Gold",
+	"VCIT":  "Corporate Bonds (Int)",
+	"VGIT":  "Gov Bonds (Int)",
+	"VGLT":  "Gov Bonds (Long)",
+	"IGOV":  "Intl Gov Bonds",
+	"VOO":   "US Total Market",
+	"VEU":   "International Equity",
+	"BIL":   "Short-Term T-Bills (Cash)",
+	"VFIAX": "US Large Cap (S&P 500)",
+	"VTIAX": "International Equity",
+	"AGG":   "US Aggregate Bonds",
 }
 
 // Asset URLs - links to fund provider pages
 var assetURLs = map[string]string{
-	"SPMO": "https://www.invesco.com/us/financial-products/etfs/product-detail?productId=SPMO",
-	"MTUM": "https://www.ishares.com/us/products/251614/ishares-msci-usa-momentum-factor-etf",
-	"VBK":  "https://investor.vanguard.com/investment-products/etfs/profile/vbk",
-	"VBR":  "https://investor.vanguard.com/investment-products/etfs/profile/vbr",
-	"VTV":  "https://investor.vanguard.com/investment-products/etfs/profile/vtv",
-	"VEA":  "https://investor.vanguard.com/investment-products/etfs/profile/vea",
-	"VWO":  "https://investor.vanguard.com/investment-products/etfs/profile/vwo",
-	"VNQ":  "https://investor.vanguard.com/investment-products/etfs/profile/vnq",
-	"QQQM": "https://www.invesco.com/us/financial-products/etfs/product-detail?productId=QQQM",
-	"QQQ":  "https://www.invesco.com/us/financial-products/etfs/product-detail?productId=QQQ",
-	"GSG":  "https://www.ishares.com/us/products/239757/ishares-sp-gsci-commodityindexed-trust-fund",
-	"IAU":  "https://www.ishares.com/us/products/239561/ishares-gold-trust-fund",
-	"VCIT": "https://investor.vanguard.com/investment-products/etfs/profile/vcit",
-	"VGIT": "https://investor.vanguard.com/investment-products/etfs/profile/vgit",
-	"VGLT": "https://investor.vanguard.com/investment-products/etfs/profile/vglt",
-	"IGOV": "https://www.ishares.com/us/products/239830/ishares-international-treasury-bond-etf",
-	"VOO":  "https://investor.vanguard.com/investment-products/etfs/profile/voo",
-	"VEU":  "https://investor.vanguard.com/investment-products/etfs/profile/veu",
-	"BIL":  "https://www.ssga.com/us/en/individual/etfs/funds/spdr-bloomberg-1-3-month-t-bill-etf-bil",
+	"SPMO":  "https://www.invesco.com/us/financial-products/etfs/product-detail?productId=SPMO",
+	"MTUM":  "https://www.ishares.com/us/products/251614/ishares-msci-usa-momentum-factor-etf",
+	"VBK":   "https://investor.vanguard.com/investment-products/etfs/profile/vbk",
+	"VBR":   "https://investor.vanguard.com/investment-products/etfs/profile/vbr",
+	"VTV":   "https://investor.vanguard.com/investment-products/etfs/profile/vtv",
+	"VEA":   "https://investor.vanguard.com/investment-products/etfs/profile/vea",
+	"VWO":   "https://investor.vanguard.com/investment-products/etfs/profile/vwo",
+	"VNQ":   "https://investor.vanguard.com/investment-products/etfs/profile/vnq",
+	"QQQM":  "https://www.invesco.com/us/financial-products/etfs/product-detail?productId=QQQM",
+	"QQQ":   "https://www.invesco.com/us/financial-products/etfs/product-detail?productId=QQQ",
+	"GSG":   "https://www.ishares.com/us/products/239757/ishares-sp-gsci-commodityindexed-trust-fund",
+	"IAU":   "https://www.ishares.com/us/products/239561/ishares-gold-trust-fund",
+	"VCIT":  "https://investor.vanguard.com/investment-products/etfs/profile/vcit",
+	"VGIT":  "https://investor.vanguard.com/investment-products/etfs/profile/vgit",
+	"VGLT":  "https://investor.vanguard.com/investment-products/etfs/profile/vglt",
+	"IGOV":  "https://www.ishares.com/us/products/239830/ishares-international-treasury-bond-etf",
+	"VOO":   "https://investor.vanguard.com/investment-products/etfs/profile/voo",
+	"VEU":   "https://investor.vanguard.com/investment-products/etfs/profile/veu",
+	"BIL":   "https://www.ssga.com/us/en/individual/etfs/funds/spdr-bloomberg-1-3-month-t-bill-etf-bil",
+	"VFIAX": "https://investor.vanguard.com/investment-products/mutual-funds/profile/vfiax",
+	"VTIAX": "https://investor.vanguard.com/investment-products/mutual-funds/profile/vtiax",
+	"AGG":   "https://www.ishares.com/us/products/239458/ishares-core-total-us-bond-market-etf",
 }
 
 // Asset expense ratios
 var assetExpenseRatios = map[string]string{
-	"SPMO": "0.13%",
-	"MTUM": "0.15%",
-	"VBK":  "0.07%",
-	"VBR":  "0.07%",
-	"VTV":  "0.04%",
-	"VEA":  "0.05%",
-	"VWO":  "0.08%",
-	"VNQ":  "0.13%",
-	"QQQM": "0.15%",
-	"QQQ":  "0.20%",
-	"GSG":  "0.75%",
-	"IAU":  "0.25%",
-	"VCIT": "0.04%",
-	"VGIT": "0.04%",
-	"VGLT": "0.04%",
-	"IGOV": "0.35%",
-	"BIL":  "0.14%",
-	"VOO":  "0.03%",
-	"VEU":  "0.07%",
+	"SPMO":  "0.13%",
+	"MTUM":  "0.15%",
+	"VBK":   "0.07%",
+	"VBR":   "0.07%",
+	"VTV":   "0.04%",
+	"VEA":   "0.05%",
+	"VWO":   "0.08%",
+	"VNQ":   "0.13%",
+	"QQQM":  "0.15%",
+	"QQQ":   "0.20%",
+	"GSG":   "0.75%",
+	"IAU":   "0.25%",
+	"VCIT":  "0.04%",
+	"VGIT":  "0.04%",
+	"VGLT":  "0.04%",
+	"IGOV":  "0.35%",
+	"BIL":   "0.14%",
+	"VOO":   "0.03%",
+	"VEU":   "0.07%",
+	"VFIAX": "0.04%",
+	"VTIAX": "0.11%",
+	"AGG":   "0.03%",
 }
 
 type DualMomentumData struct {
-	USSymbol     string
-	USURL        string
-	USPrice      float64
-	USROC12M     float64
-	IntlSymbol   string
-	IntlURL      string
-	IntlPrice    float64
-	IntlROC12M   float64
-	CashSymbol   string
-	CashURL      string
-	CashPrice    float64
-	CashYield    float64
-	Selected     string
-	SignalDate   string
+	USSymbol    string
+	USURL       string
+	USPrice     float64
+	USROC12M    float64
+	USAbove     bool
+
+	IntlSymbol  string
+	IntlURL     string
+	IntlPrice   float64
+	IntlROC12M  float64
+	IntlAbove   bool
+
+	BondSymbol  string
+	BondURL     string
+	BondPrice   float64
+	BondROC12M  float64
+
+	TBillSymbol string
+	TBillROC12M float64
+
+	Selected   string
+	SignalDate string
+	Reason     string
 }
 
 type HomePage struct {
@@ -325,21 +377,23 @@ func gtaa6Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get v2 backtests with full analysis (drawdowns & rolling returns)
-	backtests, err := getBacktestsWithAnalysis("gtaa6", "v2_")
+	// Single canonical backtest for /gtaa6: the codex-generated
+	// alt_spmo_qqqm_14 hold-until-replaced run, with full drilldown.
+	detail, err := getBacktestDetail("gtaa6", "alt_spmo_qqqm_14")
 	if err != nil {
-		log.Printf("Error loading backtests: %v", err)
-		// Continue without backtests rather than failing
+		log.Printf("Error loading alt_spmo_qqqm_14 backtest detail: %v", err)
+		// Render without it rather than failing — historical backtests stay
+		// reachable from /backtests.
 	}
 
 	data := struct {
 		Strategy
-		Backtests []BacktestWithAnalysis
-		Version   string
+		Backtest *BacktestDetail
+		Version  string
 	}{
-		Strategy:  strat,
-		Backtests: backtests,
-		Version:   Version,
+		Strategy: strat,
+		Backtest: detail,
+		Version:  Version,
 	}
 
 	if err := templates.ExecuteTemplate(w, "gtaa6.html", data); err != nil {
@@ -385,24 +439,33 @@ func dualMomentumHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get v2 backtests with full analysis (drawdowns & rolling returns)
-	backtests, err := getBacktestsWithAnalysis("dual_momentum", "v2_")
+	// Live signal data (VFIAX / VTIAX / AGG with T-bill hurdle).
+	dm, err := getDualMomentumData()
 	if err != nil {
-		log.Printf("Error loading backtests: %v", err)
-		// Continue without backtests rather than failing
+		log.Printf("Error loading dual momentum data: %v", err)
+	}
+
+	// Canonical backtest for /dual-momentum: v2_bonds matches the live
+	// strategy (AGG as defensive sleeve when both equity sleeves fail the
+	// T-bill hurdle). Other variants stay reachable from /backtests.
+	detail, err := getBacktestDetail("dual_momentum", "v2_bonds")
+	if err != nil {
+		log.Printf("Error loading dual_momentum v2_bonds backtest detail: %v", err)
 	}
 
 	data := struct {
 		Strategy
-		Backtests []BacktestWithAnalysis
-		Version   string
+		DualMomentum DualMomentumData
+		Backtest     *BacktestDetail
+		Version      string
 	}{
-		Strategy:  strat,
-		Backtests: backtests,
-		Version:   Version,
+		Strategy:     strat,
+		DualMomentum: dm,
+		Backtest:     detail,
+		Version:      Version,
 	}
 
-	if err := templates.ExecuteTemplate(w, "dual_momentum.html", data); err != nil{
+	if err := templates.ExecuteTemplate(w, "dual_momentum.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Printf("Template error: %v", err)
 	}
@@ -423,17 +486,26 @@ func etfHandler(w http.ResponseWriter, r *http.Request) {
 
 	var currentPrice, ma200, ma215, roc1m, roc3m, roc6m, roc12m, avgROC float64
 	db.QueryRow(`
-		SELECT p.adj_close,
-		       COALESCE(i.ma_200, 0), COALESCE(i.ma_215, 0),
-		       COALESCE(i.roc_1m, 0), COALESCE(i.roc_3m, 0),
-		       COALESCE(i.roc_6m, 0), COALESCE(i.roc_12m, 0),
-		       COALESCE(i.avg_roc, 0)
-		FROM prices p
-		LEFT JOIN indicators i ON p.ticker_id = i.ticker_id AND p.date = i.date
-		WHERE p.ticker_id = ?
-		ORDER BY p.date DESC
+		SELECT adj_close FROM prices
+		WHERE ticker_id = ?
+		ORDER BY date DESC
 		LIMIT 1
-	`, tickerID).Scan(&currentPrice, &ma200, &ma215, &roc1m, &roc3m, &roc6m, &roc12m, &avgROC)
+	`, tickerID).Scan(&currentPrice)
+
+	// Indicators are computed end-of-day and may lag the latest price row by
+	// a day. Fetch the most recent indicators row independently so the page
+	// still shows ROC/MA values when today's prices arrive before the
+	// indicator job has run.
+	db.QueryRow(`
+		SELECT COALESCE(ma_200, 0), COALESCE(ma_215, 0),
+		       COALESCE(roc_1m, 0), COALESCE(roc_3m, 0),
+		       COALESCE(roc_6m, 0), COALESCE(roc_12m, 0),
+		       COALESCE(avg_roc, 0)
+		FROM indicators
+		WHERE ticker_id = ?
+		ORDER BY date DESC
+		LIMIT 1
+	`, tickerID).Scan(&ma200, &ma215, &roc1m, &roc3m, &roc6m, &roc12m, &avgROC)
 
 	rows, err := db.Query(`
 		SELECT date, adj_close FROM prices
@@ -574,9 +646,16 @@ func getGTAAAssets() ([]AssetData, string, error) {
 }
 
 func getDualMomentumData() (DualMomentumData, error) {
-	var dm DualMomentumData
+	dm := DualMomentumData{
+		USSymbol:    "VFIAX",
+		USURL:       assetURLs["VFIAX"],
+		IntlSymbol:  "VTIAX",
+		IntlURL:     assetURLs["VTIAX"],
+		BondSymbol:  "AGG",
+		BondURL:     assetURLs["AGG"],
+		TBillSymbol: "TBILL",
+	}
 
-	// Get latest signal
 	var signalID int
 	err := db.QueryRow(`
 		SELECT id, signal_date FROM strategy_signals
@@ -587,77 +666,59 @@ func getDualMomentumData() (DualMomentumData, error) {
 		return dm, fmt.Errorf("no dual momentum signals found: %w", err)
 	}
 
-	// Get selected holding
 	var selectedSymbol string
+	var reason sql.NullString
 	err = db.QueryRow(`
-		SELECT t.symbol FROM holdings h
+		SELECT t.symbol, h.reason FROM holdings h
 		JOIN tickers t ON h.ticker_id = t.id
 		WHERE h.signal_id = ?
-	`, signalID).Scan(&selectedSymbol)
+	`, signalID).Scan(&selectedSymbol, &reason)
 	if err != nil {
 		log.Printf("Warning: Could not get selected holding: %v", err)
 	}
 	dm.Selected = selectedSymbol
+	dm.Reason = reason.String
 
-	// Get US data (VOO)
-	dm.USSymbol = "VOO"
-	dm.USURL = assetURLs["VOO"]
-	var usPrice, usROC sql.NullFloat64
-	err = db.QueryRow(`
-		SELECT p.adj_close, COALESCE(i.roc_12m, 0)
-		FROM tickers t
-		JOIN prices p ON t.id = p.ticker_id
-		LEFT JOIN indicators i ON t.id = i.ticker_id AND p.date = i.date
-		WHERE t.symbol = 'VOO'
-		AND p.date = (SELECT MAX(date) FROM prices WHERE ticker_id = t.id AND date <= ?)
-	`, dm.SignalDate).Scan(&usPrice, &usROC)
-	if err != nil {
-		log.Printf("Warning: Could not get VOO data: %v", err)
-	} else {
-		dm.USPrice = usPrice.Float64
-		dm.USROC12M = usROC.Float64
+	loadOne := func(symbol string) (float64, float64) {
+		var price, roc sql.NullFloat64
+		err := db.QueryRow(`
+			SELECT p.adj_close, COALESCE(i.roc_12m, 0)
+			FROM tickers t
+			JOIN prices p ON t.id = p.ticker_id
+			LEFT JOIN indicators i ON t.id = i.ticker_id AND p.date = i.date
+			WHERE t.symbol = ?
+			AND p.date = (SELECT MAX(date) FROM prices WHERE ticker_id = t.id AND date <= ?)
+		`, symbol, dm.SignalDate).Scan(&price, &roc)
+		if err != nil {
+			log.Printf("Warning: Could not get %s data: %v", symbol, err)
+		}
+		return price.Float64, roc.Float64
 	}
 
-	// Get International data (VEU)
-	dm.IntlSymbol = "VEU"
-	dm.IntlURL = assetURLs["VEU"]
-	var intlPrice, intlROC sql.NullFloat64
+	dm.USPrice, dm.USROC12M = loadOne("VFIAX")
+	dm.IntlPrice, dm.IntlROC12M = loadOne("VTIAX")
+	dm.BondPrice, dm.BondROC12M = loadOne("AGG")
+
+	// T-bill hurdle: synthetic TBILL ticker, no price, just roc_12m
+	var tbillROC sql.NullFloat64
 	err = db.QueryRow(`
-		SELECT p.adj_close, COALESCE(i.roc_12m, 0)
+		SELECT i.roc_12m
 		FROM tickers t
-		JOIN prices p ON t.id = p.ticker_id
-		LEFT JOIN indicators i ON t.id = i.ticker_id AND p.date = i.date
-		WHERE t.symbol = 'VEU'
-		AND p.date = (SELECT MAX(date) FROM prices WHERE ticker_id = t.id AND date <= ?)
-	`, dm.SignalDate).Scan(&intlPrice, &intlROC)
+		JOIN indicators i ON t.id = i.ticker_id
+		WHERE t.symbol = 'TBILL'
+		ORDER BY i.date DESC LIMIT 1
+	`).Scan(&tbillROC)
 	if err != nil {
-		log.Printf("Warning: Could not get VEU data: %v", err)
+		log.Printf("Warning: Could not get TBILL hurdle: %v", err)
 	} else {
-		dm.IntlPrice = intlPrice.Float64
-		dm.IntlROC12M = intlROC.Float64
+		dm.TBillROC12M = tbillROC.Float64
 	}
 
-	// Get Cash data (BIL)
-	dm.CashSymbol = "BIL"
-	dm.CashURL = assetURLs["BIL"]
-	var cashPrice, cashROC sql.NullFloat64
-	err = db.QueryRow(`
-		SELECT p.adj_close, COALESCE(i.roc_12m, 0)
-		FROM tickers t
-		JOIN prices p ON t.id = p.ticker_id
-		LEFT JOIN indicators i ON t.id = i.ticker_id AND p.date = i.date
-		WHERE t.symbol = 'BIL'
-		AND p.date = (SELECT MAX(date) FROM prices WHERE ticker_id = t.id AND date <= ?)
-	`, dm.SignalDate).Scan(&cashPrice, &cashROC)
-	if err != nil {
-		log.Printf("Warning: Could not get BIL data: %v", err)
-	} else {
-		dm.CashPrice = cashPrice.Float64
-		dm.CashYield = cashROC.Float64
-	}
+	dm.USAbove = dm.USROC12M > dm.TBillROC12M
+	dm.IntlAbove = dm.IntlROC12M > dm.TBillROC12M
 
-	log.Printf("Dual Momentum: VOO=$%.2f (ROC: %.2f%%), VEU=$%.2f (ROC: %.2f%%), BIL=$%.2f (12M ROC: %.2f%%), Selected=%s",
-		dm.USPrice, dm.USROC12M*100, dm.IntlPrice, dm.IntlROC12M*100, dm.CashPrice, dm.CashYield*100, dm.Selected)
+	log.Printf("Dual Momentum: VFIAX=%.2f%% (above=%v), VTIAX=%.2f%% (above=%v), AGG=%.2f%%, TBILL hurdle=%.2f%%, Selected=%s",
+		dm.USROC12M*100, dm.USAbove, dm.IntlROC12M*100, dm.IntlAbove, dm.BondROC12M*100, dm.TBillROC12M*100, dm.Selected)
 
 	return dm, nil
 }
@@ -761,6 +822,20 @@ func getLatestStrategy(strategyName string) (Strategy, error) {
 
 	strat.TotalCash = totalCash
 
+	// Assign momentum-rank to non-cash holdings (1 = highest score).
+	ranked := make([]int, 0, len(strat.Holdings))
+	for i, h := range strat.Holdings {
+		if !h.IsCash {
+			ranked = append(ranked, i)
+		}
+	}
+	sort.Slice(ranked, func(a, b int) bool {
+		return strat.Holdings[ranked[a]].MomentumScore > strat.Holdings[ranked[b]].MomentumScore
+	})
+	for rank, idx := range ranked {
+		strat.Holdings[idx].Rank = rank + 1
+	}
+
 	return strat, nil
 }
 
@@ -863,9 +938,11 @@ type BacktestDetail struct {
 // Database query functions for backtests
 
 func getAllBacktestSummaries() ([]BacktestSummary, error) {
+	// Exclude the canonical alt_spmo_qqqm_14 row — it lives on /gtaa6 and we
+	// don't want it duplicated on the Historical Backtests index.
 	query := `
-		SELECT 
-			c.id, c.strategy_name, c.variant, c.universe_etfs, 
+		SELECT
+			c.id, c.strategy_name, c.variant, c.universe_etfs,
 			c.start_date, c.end_date, c.initial_capital, c.rebalance_frequency,
 			c.top_n, c.description,
 			m.period_start, m.period_end, m.years,
@@ -874,6 +951,7 @@ func getAllBacktestSummaries() ([]BacktestSummary, error) {
 			m.effective_tax_rate, m.max_drawdown, m.num_transactions
 		FROM backtest_configs c
 		JOIN backtest_metrics m ON c.id = m.config_id
+		WHERE NOT (c.strategy_name = 'gtaa6' AND c.variant = 'alt_spmo_qqqm_14')
 		ORDER BY m.after_tax_cagr DESC
 	`
 
