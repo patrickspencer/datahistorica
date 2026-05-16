@@ -8,34 +8,7 @@
 </head>
 <body>
     <div class="container">
-        <nav>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/gtaa6">GTAA AGG 6</a></li>
-                <li><a href="/gtaa3">GTAA AGG 3</a></li>
-                <li><a href="/dual-momentum">Dual Momentum</a></li>
-                <li><a href="/backtests" class="active">Backtests</a></li>
-                <li><a href="/etf/SPMO">SPMO</a></li>
-                <li>
-                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
-                        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="5"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3"></line>
-                            <line x1="12" y1="21" x2="12" y2="23"></line>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                            <line x1="1" y1="12" x2="3" y2="12"></line>
-                            <line x1="21" y1="12" x2="23" y2="12"></line>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                        </svg>
-                        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                        </svg>
-                    </button>
-                </li>
-            </ul>
-        </nav>
+        {{template "nav" .}}
 
         <main>
             <h2>Performance Comparison</h2>
@@ -91,47 +64,6 @@
         </footer>
     </div>
 
-    <script>
-        // Theme management
-        (function() {
-            'use strict';
 
-            // Apply theme
-            function applyTheme(theme) {
-                const root = document.documentElement;
-                if (theme === 'dark') {
-                    root.setAttribute('data-theme', 'dark');
-                } else {
-                    root.removeAttribute('data-theme');
-                }
-                localStorage.setItem('theme', theme);
-            }
-
-            // Get current theme
-            function getCurrentTheme() {
-                return document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light';
-            }
-
-            // Initialize theme immediately to prevent flash
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                applyTheme(savedTheme);
-            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                applyTheme('dark');
-            }
-
-            // Set up toggle button when DOM is ready
-            window.addEventListener('DOMContentLoaded', function() {
-                const toggleButton = document.getElementById('theme-toggle');
-                if (toggleButton) {
-                    toggleButton.addEventListener('click', function() {
-                        const currentTheme = getCurrentTheme();
-                        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                        applyTheme(newTheme);
-                    });
-                }
-            });
-        })();
-    </script>
 </body>
 </html>

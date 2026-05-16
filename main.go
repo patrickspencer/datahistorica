@@ -271,6 +271,11 @@ type ETFPage struct {
 	MA215        float64
 	AboveMA200   bool
 	AboveMA215   bool
+	ROC1M        float64
+	ROC3M        float64
+	ROC6M        float64
+	ROC12M       float64
+	AvgROC       float64
 	Prices       []ETFPriceRow
 	Version      string
 }
@@ -416,15 +421,19 @@ func etfHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var currentPrice, ma200, ma215 float64
+	var currentPrice, ma200, ma215, roc1m, roc3m, roc6m, roc12m, avgROC float64
 	db.QueryRow(`
-		SELECT p.adj_close, COALESCE(i.ma_200, 0), COALESCE(i.ma_215, 0)
+		SELECT p.adj_close,
+		       COALESCE(i.ma_200, 0), COALESCE(i.ma_215, 0),
+		       COALESCE(i.roc_1m, 0), COALESCE(i.roc_3m, 0),
+		       COALESCE(i.roc_6m, 0), COALESCE(i.roc_12m, 0),
+		       COALESCE(i.avg_roc, 0)
 		FROM prices p
 		LEFT JOIN indicators i ON p.ticker_id = i.ticker_id AND p.date = i.date
 		WHERE p.ticker_id = ?
 		ORDER BY p.date DESC
 		LIMIT 1
-	`, tickerID).Scan(&currentPrice, &ma200, &ma215)
+	`, tickerID).Scan(&currentPrice, &ma200, &ma215, &roc1m, &roc3m, &roc6m, &roc12m, &avgROC)
 
 	rows, err := db.Query(`
 		SELECT date, adj_close FROM prices
@@ -470,6 +479,11 @@ func etfHandler(w http.ResponseWriter, r *http.Request) {
 		MA215:        ma215,
 		AboveMA200:   ma200 > 0 && currentPrice > ma200,
 		AboveMA215:   ma215 > 0 && currentPrice > ma215,
+		ROC1M:        roc1m,
+		ROC3M:        roc3m,
+		ROC6M:        roc6m,
+		ROC12M:       roc12m,
+		AvgROC:       avgROC,
 		Prices:       prices,
 		Version:      Version,
 	}
