@@ -134,11 +134,16 @@ nav a:hover {
 
 /* Mobile Navigation */
 @media (max-width: 768px) {
+    nav {
+        min-height: 3.5rem;
+    }
+
     .hamburger {
         display: block;
         position: absolute;
         right: 1rem;
-        top: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
         z-index: 1000;
     }
 
@@ -341,24 +346,27 @@ footer {
 /* Theme Toggle Button */
 .theme-toggle {
     background: none;
-    border: none;
+    border: 2px solid var(--border-color);
     cursor: pointer;
-    padding: 0.5rem;
+    padding: 6px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
-    transition: background 0.3s ease;
+    border-radius: 50%;
+    transition: background 0.3s ease, border-color 0.3s ease;
+    width: 36px;
+    height: 36px;
 }
 
 .theme-toggle:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--table-row-hover);
 }
 
 .theme-toggle svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     transition: transform 0.3s ease;
+    stroke: var(--text-color);
 }
 
 .theme-toggle .sun-icon {
@@ -367,6 +375,10 @@ footer {
 
 .theme-toggle .moon-icon {
     display: block;
+}
+
+:root[data-theme="dark"] .theme-toggle svg {
+    stroke: #ffffff;
 }
 
 :root[data-theme="dark"] .theme-toggle .sun-icon {
@@ -682,7 +694,7 @@ footer {
     margin: 0.5rem 0;
     background: var(--card-bg);
     box-shadow: 0 2px 4px var(--shadow-color);
-    font-size: 0.9em;
+    font-size: 0.8em;
     table-layout: fixed;
 }
 
@@ -914,6 +926,10 @@ h2 {
     color: var(--text-color);
 }
 
+.filter-toggle {
+    display: none;
+}
+
 .note-text {
     margin-top: 1rem;
     font-size: 0.9em;
@@ -993,11 +1009,44 @@ h2 {
         grid-template-columns: 1fr 1fr;
     }
 
-    /* Stack filter controls vertically on mobile */
+    /* Collapsible filters on mobile */
+    .filter-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 0.5rem 0.9rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--text-color);
+        cursor: pointer;
+        margin-bottom: 0;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .filter-toggle::after {
+        content: '▾';
+        font-size: 1rem;
+        transition: transform 0.2s;
+    }
+
+    .filter-toggle[aria-expanded="true"]::after {
+        transform: rotate(180deg);
+    }
+
     .filter-controls {
+        display: none;
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
+        margin-top: 0.75rem;
+    }
+
+    .filter-controls.open {
+        display: flex;
     }
 
     .filter-group {
@@ -1007,8 +1056,9 @@ h2 {
     /* Responsive tables - make horizontally scrollable */
     .data-table {
         font-size: 0.85rem;
-        min-width: 100%;
+        min-width: 750px;
         white-space: nowrap;
+        table-layout: auto;
     }
 
     .data-table th,

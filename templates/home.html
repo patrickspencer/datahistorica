@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Historica</title>
-    <link rel="stylesheet" href="/static/style.css?v=20260513-1">
+    <link rel="stylesheet" href="/static/style.css?v=20260515-5">
 </head>
+
 <body>
     <div class="container">
         <nav>
@@ -19,7 +21,8 @@
                 <li><a href="/etf/SPMO">SPMO</a></li>
                 <li>
                     <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
-                        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="5"></circle>
                             <line x1="12" y1="1" x2="12" y2="3"></line>
                             <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -30,7 +33,8 @@
                             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
                             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                         </svg>
-                        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                         </svg>
                     </button>
@@ -40,16 +44,22 @@
 
         <main>
             <div class="card">
-                <h2>GTAA Asset Rankings</h2>
+                <h2>GTAA Assets</h2>
 
-                <div class="filter-controls">
+                <button class="filter-toggle" id="filterToggle" aria-expanded="false" aria-controls="filterControls">
+                    &#9881; Filters
+                </button>
+
+                <div class="filter-controls" id="filterControls">
                     <div class="filter-group">
                         <label for="investmentAmount">Investment Amount:</label>
-                        <input type="number" id="investmentAmount" placeholder="Enter amount" class="calculator-input" style="width: 150px;">
+                        <input type="number" id="investmentAmount" placeholder="Enter amount" class="calculator-input"
+                            style="width: 150px;">
                     </div>
                     <div class="filter-group">
                         <label for="numHoldings">Number of Holdings:</label>
-                        <input type="number" id="numHoldings" placeholder="6" value="6" min="1" max="14" class="calculator-input" style="width: 80px;">
+                        <input type="number" id="numHoldings" placeholder="6" value="6" min="1" max="14"
+                            class="calculator-input" style="width: 80px;">
                     </div>
                     <div class="filter-group">
                         <label for="maToggle">
@@ -104,18 +114,25 @@
                     </thead>
                     <tbody>
                         {{range .GTAAAssets}}
-                        <tr {{if .IsSelected6}}class="selected"{{end}} data-above-ma="{{.AboveMA}}" data-is-selected="{{.IsSelected6}}" data-ma200="{{printf "%.2f" .MA200}}" data-ma215="{{printf "%.2f" .MA215}}" data-ticker="{{.Symbol}}">
+                        <tr {{if .IsSelected6}}class="selected" {{end}} data-above-ma="{{.AboveMA}}"
+                            data-is-selected="{{.IsSelected6}}" data-ma200="{{printf " %.2f" .MA200}}"
+                            data-ma215="{{printf " %.2f" .MA215}}" data-ticker="{{.Symbol}}">
                             <td class="text-left">{{.Rank}}</td>
                             <td class="text-left">{{.Description}}</td>
                             <td class="text-left"><a href="/etf/{{.Symbol}}">{{.Symbol}}</a></td>
                             <td class="text-left">${{printf "%.2f" .Price}}</td>
                             <td class="text-left ma-value">${{printf "%.2f" .MA200}}</td>
                             <td class="text-left">{{if .AboveMA}}✓{{else}}✗{{end}}</td>
-                            <td class="text-left {{if gt .AvgROC 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .AvgROC 100.0)}}%</td>
-                            <td class="text-left {{if gt .ROC1M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC1M 100.0)}}%</td>
-                            <td class="text-left {{if gt .ROC3M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC3M 100.0)}}%</td>
-                            <td class="text-left {{if gt .ROC6M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC6M 100.0)}}%</td>
-                            <td class="text-left {{if gt .ROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .ROC12M 100.0)}}%</td>
+                            <td class="text-left {{if gt .AvgROC 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f"
+                                (mul .AvgROC 100.0)}}%</td>
+                            <td class="text-left {{if gt .ROC1M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f"
+                                (mul .ROC1M 100.0)}}%</td>
+                            <td class="text-left {{if gt .ROC3M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f"
+                                (mul .ROC3M 100.0)}}%</td>
+                            <td class="text-left {{if gt .ROC6M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f"
+                                (mul .ROC6M 100.0)}}%</td>
+                            <td class="text-left {{if gt .ROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f"
+                                (mul .ROC12M 100.0)}}%</td>
                             <td class="text-left investment-amount">-</td>
                         </tr>
                         {{end}}
@@ -125,7 +142,8 @@
                 <div class="meta">
                     <strong>Signal Date:</strong> {{formatDate .SignalDate}}<br>
                     <strong>Strategy:</strong> Global Tactical Asset Allocation<br>
-                    <strong>Selection Criteria:</strong> Top assets by average momentum (1M, 3M, 6M, 12M ROC) above <span id="metaMALabel">200D MA</span>
+                    <strong>Selection Criteria:</strong> Top assets by average momentum (1M, 3M, 6M, 12M ROC) above
+                    <span id="metaMALabel">200D MA</span>
                 </div>
 
                 <p class="gtaa-note note-text"></p>
@@ -145,35 +163,44 @@
                     </thead>
                     <tbody>
                         {{if gt .DualMomentum.USROC12M .DualMomentum.IntlROC12M}}
-                        <tr {{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}class="selected"{{end}}>
+                        <tr {{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}class="selected" {{end}}>
                             <td class="text-left">US Equity</td>
-                            <td class="text-left"><a href="/etf/{{.DualMomentum.USSymbol}}">{{.DualMomentum.USSymbol}}</a></td>
-                            <td class="text-left {{if gt .DualMomentum.USROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.USROC12M 100.0)}}%</td>
+                            <td class="text-left"><a
+                                    href="/etf/{{.DualMomentum.USSymbol}}">{{.DualMomentum.USSymbol}}</a></td>
+                            <td class="text-left {{if gt .DualMomentum.USROC12M 0.0}}positive{{else}}negative{{end}}">
+                                {{printf "%.2f" (mul .DualMomentum.USROC12M 100.0)}}%</td>
                             <td class="text-left">${{printf "%.2f" .DualMomentum.USPrice}}</td>
                         </tr>
-                        <tr {{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}class="selected"{{end}}>
+                        <tr {{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}class="selected" {{end}}>
                             <td class="text-left">International Equity</td>
-                            <td class="text-left"><a href="/etf/{{.DualMomentum.IntlSymbol}}">{{.DualMomentum.IntlSymbol}}</a></td>
-                            <td class="text-left {{if gt .DualMomentum.IntlROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.IntlROC12M 100.0)}}%</td>
+                            <td class="text-left"><a
+                                    href="/etf/{{.DualMomentum.IntlSymbol}}">{{.DualMomentum.IntlSymbol}}</a></td>
+                            <td class="text-left {{if gt .DualMomentum.IntlROC12M 0.0}}positive{{else}}negative{{end}}">
+                                {{printf "%.2f" (mul .DualMomentum.IntlROC12M 100.0)}}%</td>
                             <td class="text-left">${{printf "%.2f" .DualMomentum.IntlPrice}}</td>
                         </tr>
                         {{else}}
-                        <tr {{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}class="selected"{{end}}>
+                        <tr {{if eq .DualMomentum.Selected .DualMomentum.IntlSymbol}}class="selected" {{end}}>
                             <td class="text-left">International Equity</td>
-                            <td class="text-left"><a href="/etf/{{.DualMomentum.IntlSymbol}}">{{.DualMomentum.IntlSymbol}}</a></td>
-                            <td class="text-left {{if gt .DualMomentum.IntlROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.IntlROC12M 100.0)}}%</td>
+                            <td class="text-left"><a
+                                    href="/etf/{{.DualMomentum.IntlSymbol}}">{{.DualMomentum.IntlSymbol}}</a></td>
+                            <td class="text-left {{if gt .DualMomentum.IntlROC12M 0.0}}positive{{else}}negative{{end}}">
+                                {{printf "%.2f" (mul .DualMomentum.IntlROC12M 100.0)}}%</td>
                             <td class="text-left">${{printf "%.2f" .DualMomentum.IntlPrice}}</td>
                         </tr>
-                        <tr {{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}class="selected"{{end}}>
+                        <tr {{if eq .DualMomentum.Selected .DualMomentum.USSymbol}}class="selected" {{end}}>
                             <td class="text-left">US Equity</td>
-                            <td class="text-left"><a href="/etf/{{.DualMomentum.USSymbol}}">{{.DualMomentum.USSymbol}}</a></td>
-                            <td class="text-left {{if gt .DualMomentum.USROC12M 0.0}}positive{{else}}negative{{end}}">{{printf "%.2f" (mul .DualMomentum.USROC12M 100.0)}}%</td>
+                            <td class="text-left"><a
+                                    href="/etf/{{.DualMomentum.USSymbol}}">{{.DualMomentum.USSymbol}}</a></td>
+                            <td class="text-left {{if gt .DualMomentum.USROC12M 0.0}}positive{{else}}negative{{end}}">
+                                {{printf "%.2f" (mul .DualMomentum.USROC12M 100.0)}}%</td>
                             <td class="text-left">${{printf "%.2f" .DualMomentum.USPrice}}</td>
                         </tr>
                         {{end}}
-                        <tr {{if eq .DualMomentum.Selected .DualMomentum.CashSymbol}}class="selected"{{end}}>
+                        <tr {{if eq .DualMomentum.Selected .DualMomentum.CashSymbol}}class="selected" {{end}}>
                             <td class="text-left">Cash / T-Bills</td>
-                            <td class="text-left"><a href="/etf/{{.DualMomentum.CashSymbol}}">{{.DualMomentum.CashSymbol}}</a></td>
+                            <td class="text-left"><a
+                                    href="/etf/{{.DualMomentum.CashSymbol}}">{{.DualMomentum.CashSymbol}}</a></td>
                             <td class="text-left positive">{{printf "%.2f" (mul .DualMomentum.CashYield 100.0)}}%</td>
                             <td class="text-left">${{printf "%.2f" .DualMomentum.CashPrice}}</td>
                         </tr>
@@ -184,7 +211,9 @@
                     <strong>Signal Date:</strong> {{formatDate .DualMomentum.SignalDate}}<br>
                     <strong>Strategy:</strong> US vs International equity selection based on 12-month ROC<br>
                     <strong>Current Selection:</strong> <strong>{{.DualMomentum.Selected}}</strong><br>
-                    <strong>Selection Logic:</strong> If both equity fund 12-month ROC is higher than T-Bill yield, choose the highest of the two. If only one is higher, choose that. If neither are higher, go to T-Bills.
+                    <strong>Selection Logic:</strong> If both equity fund 12-month ROC is higher than T-Bill yield,
+                    choose the highest of the two. If only one is higher, choose that. If neither are higher, go to
+                    T-Bills.
                 </div>
             </div>
         </main>
@@ -197,7 +226,7 @@
 
     <script>
         // Theme management
-        (function() {
+        (function () {
             'use strict';
 
             // Apply theme
@@ -225,10 +254,10 @@
             }
 
             // Set up toggle button when DOM is ready
-            window.addEventListener('DOMContentLoaded', function() {
+            window.addEventListener('DOMContentLoaded', function () {
                 const toggleButton = document.getElementById('theme-toggle');
                 if (toggleButton) {
-                    toggleButton.addEventListener('click', function() {
+                    toggleButton.addEventListener('click', function () {
                         const currentTheme = getCurrentTheme();
                         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
                         applyTheme(newTheme);
@@ -238,12 +267,12 @@
         })();
 
         // Hamburger menu toggle
-        (function() {
+        (function () {
             const hamburger = document.getElementById('hamburger');
             const navMenu = document.getElementById('nav-menu');
 
             if (hamburger && navMenu) {
-                hamburger.addEventListener('click', function() {
+                hamburger.addEventListener('click', function () {
                     navMenu.classList.toggle('active');
                     hamburger.textContent = navMenu.classList.contains('active') ? '✕' : '☰';
                 });
@@ -251,7 +280,7 @@
                 // Close menu when clicking a link
                 const navLinks = navMenu.querySelectorAll('a');
                 navLinks.forEach(link => {
-                    link.addEventListener('click', function() {
+                    link.addEventListener('click', function () {
                         navMenu.classList.remove('active');
                         hamburger.textContent = '☰';
                     });
@@ -259,8 +288,20 @@
             }
         })();
 
+        // Collapsible filter panel (mobile)
+        (function () {
+            const btn = document.getElementById('filterToggle');
+            const panel = document.getElementById('filterControls');
+            if (btn && panel) {
+                btn.addEventListener('click', function () {
+                    const open = panel.classList.toggle('open');
+                    btn.setAttribute('aria-expanded', open);
+                });
+            }
+        })();
+
         // Filter toggle for above MA
-        document.getElementById('filterAboveMA').addEventListener('change', function() {
+        document.getElementById('filterAboveMA').addEventListener('change', function () {
             const rows = document.querySelectorAll('.data-table tbody tr[data-above-ma]');
             const filterEnabled = this.checked;
 
@@ -366,7 +407,7 @@
 
 
         // MA toggle functionality
-        document.getElementById('maToggle').addEventListener('change', function() {
+        document.getElementById('maToggle').addEventListener('change', function () {
             const use10Month = this.checked;
             const rows = document.querySelectorAll('.data-table tbody tr[data-ma200]');
 
@@ -397,4 +438,5 @@
         });
     </script>
 </body>
+
 </html>
